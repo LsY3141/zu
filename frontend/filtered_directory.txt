@@ -1,0 +1,174 @@
+zebal\voice-note-app\frontend\.env
+zebal\voice-note-app\frontend\11directory_structure.txt
+zebal\voice-note-app\frontend\filtered_directory.txt
+zebal\voice-note-app\frontend\package-lock.json
+zebal\voice-note-app\frontend\package.json
+zebal\voice-note-app\frontend\public
+zebal\voice-note-app\frontend\README.md
+zebal\voice-note-app\frontend\src
+zebal\voice-note-app\frontend\public\favicon.ico
+zebal\voice-note-app\frontend\public\index.html
+zebal\voice-note-app\frontend\public\logo192.png
+zebal\voice-note-app\frontend\public\logo512.png
+zebal\voice-note-app\frontend\public\manifest.json
+zebal\voice-note-app\frontend\public\robots.txt
+zebal\voice-note-app\frontend\src\api
+zebal\voice-note-app\frontend\src\App.css
+zebal\voice-note-app\frontend\src\App.js
+zebal\voice-note-app\frontend\src\App.test.js
+zebal\voice-note-app\frontend\src\assets
+zebal\voice-note-app\frontend\src\components
+zebal\voice-note-app\frontend\src\hooks
+zebal\voice-note-app\frontend\src\index.css
+zebal\voice-note-app\frontend\src\index.js
+zebal\voice-note-app\frontend\src\logo.svg
+zebal\voice-note-app\frontend\src\pages
+zebal\voice-note-app\frontend\src\redux
+zebal\voice-note-app\frontend\src\reportWebVitals.js
+zebal\voice-note-app\frontend\src\setupTests.js
+zebal\voice-note-app\frontend\src\styles
+zebal\voice-note-app\frontend\src\utils
+zebal\voice-note-app\frontend\src\api\authApi.js
+zebal\voice-note-app\frontend\src\api\axios.js
+zebal\voice-note-app\frontend\src\api\noteApi.js
+zebal\voice-note-app\frontend\src\api\speechApi.js
+zebal\voice-note-app\frontend\src\components\auth
+zebal\voice-note-app\frontend\src\components\layout
+zebal\voice-note-app\frontend\src\components\notes
+zebal\voice-note-app\frontend\src\components\shared
+zebal\voice-note-app\frontend\src\components\speech
+zebal\voice-note-app\frontend\src\components\auth\ForgotPasswordForm.jsx
+zebal\voice-note-app\frontend\src\components\auth\LoginForm.jsx
+zebal\voice-note-app\frontend\src\components\auth\RegisterForm.jsx
+zebal\voice-note-app\frontend\src\components\auth\ResetPasswordForm.jsx
+zebal\voice-note-app\frontend\src\components\layout\CalendarSidebar.jsx
+zebal\voice-note-app\frontend\src\components\layout\Header.jsx
+zebal\voice-note-app\frontend\src\components\layout\Layout.jsx
+zebal\voice-note-app\frontend\src\components\layout\Sidebar.jsx
+zebal\voice-note-app\frontend\src\components\shared\Alert.jsx
+zebal\voice-note-app\frontend\src\components\shared\Button.jsx
+zebal\voice-note-app\frontend\src\components\shared\Card.jsx
+zebal\voice-note-app\frontend\src\components\shared\ConfirmDialog.jsx
+zebal\voice-note-app\frontend\src\components\shared\Input.jsx
+zebal\voice-note-app\frontend\src\components\shared\Notification.jsx
+zebal\voice-note-app\frontend\src\components\shared\Pagination.jsx
+zebal\voice-note-app\frontend\src\components\shared\PrivateRoute.jsx
+zebal\voice-note-app\frontend\src\components\shared\Select.jsx
+zebal\voice-note-app\frontend\src\components\shared\Spinner.jsx
+zebal\voice-note-app\frontend\src\components\shared\TextArea.jsx
+zebal\voice-note-app\frontend\src\hooks\useAuth.js
+zebal\voice-note-app\frontend\src\hooks\useNotes.js
+zebal\voice-note-app\frontend\src\hooks\useVoiceRecorder.js
+zebal\voice-note-app\frontend\src\pages\ForgotPassword.jsx
+zebal\voice-note-app\frontend\src\pages\Home.jsx
+zebal\voice-note-app\frontend\src\pages\Login.jsx
+zebal\voice-note-app\frontend\src\pages\NoteDetail.jsx
+zebal\voice-note-app\frontend\src\pages\NoteEditor.jsx
+zebal\voice-note-app\frontend\src\pages\NoteList.jsx
+zebal\voice-note-app\frontend\src\pages\NotFound.jsx
+zebal\voice-note-app\frontend\src\pages\Profile.jsx
+zebal\voice-note-app\frontend\src\pages\Register.jsx
+zebal\voice-note-app\frontend\src\pages\ResetPassword.jsx
+zebal\voice-note-app\frontend\src\pages\SharedNotes.jsx
+zebal\voice-note-app\frontend\src\pages\Trash.jsx
+zebal\voice-note-app\frontend\src\pages\VoiceUpload.jsx
+zebal\voice-note-app\frontend\src\redux\slices
+zebal\voice-note-app\frontend\src\redux\store.js
+zebal\voice-note-app\frontend\src\redux\slices\authSlice.js
+zebal\voice-note-app\frontend\src\redux\slices\noteSlice.js
+zebal\voice-note-app\frontend\src\redux\slices\speechSlice.js
+zebal\voice-note-app\frontend\src\redux\slices\uiSlice.js
+zebal\voice-note-app\frontend\src\styles\GlobalStyle.js
+zebal\voice-note-app\frontend\src\styles\theme.js
+zebal\voice-note-app\frontend\src\utils\formatters.js
+zebal\voice-note-app\frontend\src\utils\validation.js
+
+
+
+zebal
+└── voice-note-app
+    └── frontend
+        ├── .env
+        ├── 11directory_structure.txt
+        ├── filtered_directory.txt
+        ├── package-lock.json
+        ├── package.json
+        ├── README.md
+        ├── public
+        │   ├── favicon.ico
+        │   ├── index.html
+        │   ├── logo192.png
+        │   ├── logo512.png
+        │   ├── manifest.json
+        │   └── robots.txt
+        └── src
+            ├── App.css
+            ├── App.js
+            ├── App.test.js
+            ├── index.css
+            ├── index.js
+            ├── logo.svg
+            ├── reportWebVitals.js
+            ├── setupTests.js
+            ├── api
+            │   ├── authApi.js
+            │   ├── axios.js
+            │   ├── noteApi.js
+            │   └── speechApi.js
+            ├── assets
+            ├── components
+            │   ├── auth
+            │   │   ├── ForgotPasswordForm.jsx
+            │   │   ├── LoginForm.jsx
+            │   │   ├── RegisterForm.jsx
+            │   │   └── ResetPasswordForm.jsx
+            │   ├── layout
+            │   │   ├── CalendarSidebar.jsx
+            │   │   ├── Header.jsx
+            │   │   ├── Layout.jsx
+            │   │   └── Sidebar.jsx
+            │   ├── notes
+            │   ├── shared
+            │   │   ├── Alert.jsx
+            │   │   ├── Button.jsx
+            │   │   ├── Card.jsx
+            │   │   ├── ConfirmDialog.jsx
+            │   │   ├── Input.jsx
+            │   │   ├── Notification.jsx
+            │   │   ├── Pagination.jsx
+            │   │   ├── PrivateRoute.jsx
+            │   │   ├── Select.jsx
+            │   │   ├── Spinner.jsx
+            │   │   └── TextArea.jsx
+            │   └── speech
+            ├── hooks
+            │   ├── useAuth.js
+            │   ├── useNotes.js
+            │   └── useVoiceRecorder.js
+            ├── pages
+            │   ├── ForgotPassword.jsx
+            │   ├── Home.jsx
+            │   ├── Login.jsx
+            │   ├── NoteDetail.jsx
+            │   ├── NoteEditor.jsx
+            │   ├── NoteList.jsx
+            │   ├── NotFound.jsx
+            │   ├── Profile.jsx
+            │   ├── Register.jsx
+            │   ├── ResetPassword.jsx
+            │   ├── SharedNotes.jsx
+            │   ├── Trash.jsx
+            │   └── VoiceUpload.jsx
+            ├── redux
+            │   ├── store.js
+            │   └── slices
+            │       ├── authSlice.js
+            │       ├── noteSlice.js
+            │       ├── speechSlice.js
+            │       └── uiSlice.js
+            ├── styles
+            │   ├── GlobalStyle.js
+            │   └── theme.js
+            └── utils
+                ├── formatters.js
+                └── validation.js

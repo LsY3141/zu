@@ -1,0 +1,60 @@
+const theme = {
+  colors: {
+    primary: '#1E88E5',
+    primaryDark: '#1565C0',
+    primaryLight: '#BBDEFB',
+    secondary: '#26A69A',
+    success: '#4CAF50',
+    danger: '#F44336',
+    warning: '#FFC107',
+    info: '#2196F3',
+    background: '#F5F7F9',
+    cardBackground: '#FFFFFF',
+    cardHover: '#F5F5F5',
+    text: '#333333',
+    textSecondary: '#757575',
+    border: '#E0E0E0',
+    sidebar: '#FFFFFF',
+    sidebarText: '#616161',
+    sidebarHover: '#F5F5F5',
+    sidebarActive: '#E3F2FD',
+  },
+  spacing: {
+    xs: '4px',
+    sm: '8px',
+    md: '16px',
+    lg: '24px',
+    xl: '32px',
+  },
+  borderRadius: {
+    small: '4px',
+    medium: '8px',
+    large: '12px',
+    round: '50%',
+  },
+  boxShadow: {
+    card: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
+    hover: '0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)',
+    button: '0 2px 5px rgba(0, 0, 0, 0.2)',
+  },
+  fonts: {
+    body: "'Noto Sans KR', sans-serif",
+    heading: "'Noto Sans KR', sans-serif",
+  },
+  fontSizes: {
+    small: '12px',
+    body: '14px',
+    heading4: '16px',
+    heading3: '18px',
+    heading2: '20px',
+    heading1: '24px',
+    display: '30px',
+  },
+  fontWeights: {
+    normal: 400,
+    medium: 500,
+    bold: 700,
+  },
+};
+
+export default theme;
