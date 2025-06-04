@@ -493,19 +493,19 @@ const VoiceUpload = () => {
   
   // 트랜스크립션 결과가 있으면 노트 제목과 내용 설정
   useEffect(() => {
-    if (transcriptionResults) {
-      // 트랜스크립션 텍스트 중 첫 20자를 제목으로 설정
-      const titleText = transcriptionResults.text?.substring(0, 20) || '음성 녹음';
-      
-      setNoteData(prev => ({
-        ...prev,
-        title: `${titleText}${titleText.length >= 20 ? '...' : ''}`,
-        content: transcriptionResults.text || '',
-      }));
-      
-      setActiveStep(3);
-    }
-  }, [transcriptionResults]);
+  console.log('transcriptionResults 변경:', transcriptionResults);
+  if (transcriptionResults && transcriptionResults.text) {
+    const titleText = transcriptionResults.text.substring(0, 20) || '음성 녹음';
+    
+    setNoteData(prev => ({
+      ...prev,
+      title: `${titleText}${titleText.length >= 20 ? '...' : ''}`,
+      content: transcriptionResults.text || '',
+    }));
+    
+    setActiveStep(3);
+  }
+}, [transcriptionResults]);
   
   // 메시지 알림 표시
   useEffect(() => {
@@ -524,28 +524,38 @@ const VoiceUpload = () => {
   
   // 트랜스크립션 작업 상태를 주기적으로 확인
   useEffect(() => {
-    if (transcriptionJob && transcriptionJob.status === 'IN_PROGRESS' && !checkingStatus) {
+  console.log('transcriptionJob 상태 변경:', transcriptionJob);
+  
+  if (transcriptionJob && transcriptionJob.status === 'IN_PROGRESS') {
+    if (!checkingStatus) {
+      console.log('주기적 상태 체크 시작');
       setCheckingStatus(true);
       
       const interval = setInterval(() => {
+        console.log('상태 체크 실행:', transcriptionJob.id);
         dispatch(checkTranscriptionStatus(transcriptionJob.id));
-      }, 5000); // 5초마다 확인
+      }, 3000); // 3초마다 확인으로 단축
       
       setStatusCheckInterval(interval);
-      
-      return () => clearInterval(interval);
     }
-    
-    if (transcriptionJob && 
-        (transcriptionJob.status === 'COMPLETED' || 
-         transcriptionJob.status === 'FAILED')) {
-      setCheckingStatus(false);
-      if (statusCheckInterval) {
-        clearInterval(statusCheckInterval);
-        setStatusCheckInterval(null);
-      }
+  } else if (transcriptionJob && 
+             (transcriptionJob.status === 'COMPLETED' || 
+              transcriptionJob.status === 'FAILED')) {
+    console.log('상태 체크 중단:', transcriptionJob.status);
+    setCheckingStatus(false);
+    if (statusCheckInterval) {
+      clearInterval(statusCheckInterval);
+      setStatusCheckInterval(null);
     }
-  }, [transcriptionJob, checkingStatus, dispatch]);
+  }
+  
+  // cleanup
+  return () => {
+    if (statusCheckInterval) {
+      clearInterval(statusCheckInterval);
+    }
+  };
+}, [transcriptionJob?.status, checkingStatus, dispatch]);
   
   const validateNoteForm = () => {
     const errors = {};

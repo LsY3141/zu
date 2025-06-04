@@ -136,6 +136,23 @@ const LoginForm = () => {
         fullWidth
         disabled={loading}
         icon={<FaSignInAlt />}
+        style={{
+          background: 'linear-gradient(135deg, #E91E63 0%, #00BCD4 100%)',
+          border: 'none',
+          clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 100%, 12px 100%)',
+          boxShadow: '0 4px 15px rgba(233, 30, 99, 0.3)',
+          transition: 'all 0.3s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.target.style.background = 'linear-gradient(135deg, #00BCD4 0%, #8BC34A 100%)';
+          e.target.style.transform = 'translateY(-2px)';
+          e.target.style.boxShadow = '0 8px 25px rgba(0, 188, 212, 0.4)';
+        }}
+        onMouseLeave={(e) => {
+          e.target.style.background = 'linear-gradient(135deg, #E91E63 0%, #00BCD4 100%)';
+          e.target.style.transform = 'translateY(0)';
+          e.target.style.boxShadow = '0 4px 15px rgba(233, 30, 99, 0.3)';
+        }}
       >
         {loading ? '로그인 중...' : '로그인'}
       </Button>

@@ -90,6 +90,7 @@ exports.uploadSpeechFile = async (req, res) => {
 };
 
 // 변환 작업 상태 확인
+
 exports.checkTranscriptionStatus = async (req, res) => {
   console.log('변환 작업 상태 확인 컨트롤러 시작');
   try {
@@ -97,69 +98,49 @@ exports.checkTranscriptionStatus = async (req, res) => {
     console.log('확인할 작업 ID:', jobId);
     
     // AWS Transcribe 작업 상태 확인
-    console.log('Transcribe 작업 상태 확인 중...');
     const jobStatus = await transcribeService.getTranscriptionJob(jobId);
     console.log('조회된 작업 상태:', jobStatus);
     
-    // DB에 작업 상태 업데이트 (실제 DB 연동 시 사용)
-    /*
-    await TranscriptionModel.updateTranscriptionStatus(
-      jobId,
-      jobStatus.status,
-      jobStatus.progress
-    );
-    console.log('DB에 작업 상태 업데이트됨');
-    */
-    
-    // 작업이 완료되었으면 결과 가져오기
-    let results = null;
-    if (jobStatus.status === 'COMPLETED' && jobStatus.url) {
-      console.log('작업 완료됨, 결과 URL:', jobStatus.url);
-      results = await transcribeService.getTranscriptionResults(jobStatus.url);
-      console.log('변환 결과 가져옴:', {
-        textLength: results.text ? results.text.length : 0,
-        speakersCount: results.speakers ? results.speakers.length : 0
-      });
-      
-      // DB에 작업 결과 저장 (실제 DB 연동 시 사용)
-      /*
-      const transcription = await TranscriptionModel.getTranscriptionByJobId(jobId);
-      
-      if (transcription) {
-        // 변환 결과 저장
-        await TranscriptionModel.saveTranscriptionResults(transcription.id, {
-          text: results.text
-        });
-        
-        // 화자 구분 정보가 있으면 저장
-        if (results.speakers && results.speakers.length > 0) {
-          await TranscriptionModel.saveSpeakerSegments(transcription.id, results.speakers);
-        }
-        console.log('DB에 변환 결과 저장됨');
-      }
-      */
-    }
-    
-    console.log('변환 작업 상태 확인 완료, 응답 전송');
-    res.status(200).json({
+    // 응답 객체 구성
+    const response = {
       success: true,
       job: {
         id: jobId,
         status: jobStatus.status,
-        progress: jobStatus.progress,
+        progress: jobStatus.progress || 0,
         createdAt: jobStatus.createdAt,
         completedAt: jobStatus.completedAt
       },
-      results
-    });
+      results: null
+    };
+    
+    // 작업이 완료되었으면 결과 가져오기
+    if (jobStatus.status === 'COMPLETED' && jobStatus.url) {
+      console.log('작업 완료됨, 결과 가져오기 시도:', jobStatus.url);
+      try {
+        const results = await transcribeService.getTranscriptionResults(jobStatus.url);
+        response.results = results;
+        console.log('변환 결과 가져오기 성공:', {
+          textLength: results.text ? results.text.length : 0,
+          speakersCount: results.speakers ? results.speakers.length : 0
+        });
+      } catch (resultError) {
+        console.error('결과 가져오기 오류:', resultError);
+        // 결과 가져오기 실패해도 완료 상태는 전달
+        response.job.status = 'COMPLETED';
+        response.job.progress = 100;
+      }
+    }
+    
+    console.log('최종 응답:', response);
+    res.status(200).json(response);
+    
   } catch (error) {
     console.error('변환 작업 상태 확인 오류:', error);
-    console.error('오류 스택:', error.stack);
     res.status(500).json({
       success: false,
       message: '변환 작업 상태 확인 중 오류가 발생했습니다.',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message
     });
   }
 };

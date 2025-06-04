@@ -45,51 +45,58 @@ const startTranscriptionJob = async (audioUrl, params = {}) => {
 };
 
 // 음성 변환 작업 상태 확인
+
 const getTranscriptionJob = async (jobId) => {
-  console.log('Transcribe 작업 상태 확인 서비스 시작');
-  console.log('작업 ID:', jobId);
+  console.log('Transcribe 작업 상태 확인 서비스 시작, 작업 ID:', jobId);
   
   try {
-    console.log('Transcribe API 호출 시작');
     const result = await transcribeService.getTranscriptionJob({
       TranscriptionJobName: jobId
     }).promise();
     
     const job = result.TranscriptionJob;
-    console.log('Transcribe 작업 상태 조회 성공:', {
+    console.log('Transcribe 작업 정보:', {
       jobName: job.TranscriptionJobName,
       status: job.TranscriptionJobStatus,
       createdAt: job.CreationTime,
-      completedAt: job.CompletionTime
+      completedAt: job.CompletionTime,
+      transcript: job.Transcript ? '있음' : '없음'
     });
     
-    // 진행 중인 작업의 진행률 계산 (추정치)
+    // 진행률 계산
     let progress = 0;
     if (job.TranscriptionJobStatus === 'IN_PROGRESS') {
       const startTime = new Date(job.CreationTime);
       const now = new Date();
-      const elapsed = (now - startTime) / 1000; // 초 단위 경과 시간
-      
-      // 파일 길이에 따라 다르지만, 대략적인 진행률 추정
-      // 평균적으로 30초의 오디오는 약 10초 정도 걸린다고 가정
-      progress = Math.min(Math.round(elapsed / 10 * 100), 99);
-      console.log('작업 진행률 추정:', progress + '%', '(경과 시간:', elapsed, '초)');
+      const elapsed = (now - startTime) / 1000;
+      progress = Math.min(Math.round(elapsed / 10 * 100), 95);
     } else if (job.TranscriptionJobStatus === 'COMPLETED') {
       progress = 100;
-      console.log('작업 완료됨, 진행률: 100%');
+    } else if (job.TranscriptionJobStatus === 'FAILED') {
+      progress = 0;
     }
     
-    return {
+    // Transcript URL 확인
+    let transcriptUrl = null;
+    if (job.TranscriptionJobStatus === 'COMPLETED' && job.Transcript && job.Transcript.TranscriptFileUri) {
+      transcriptUrl = job.Transcript.TranscriptFileUri;
+      console.log('Transcript URL 확인됨:', transcriptUrl);
+    }
+    
+    const response = {
       jobId: job.TranscriptionJobName,
       status: job.TranscriptionJobStatus,
       progress: progress,
-      url: job.TranscriptionJobStatus === 'COMPLETED' ? job.Transcript.TranscriptFileUri : null,
+      url: transcriptUrl,
       createdAt: job.CreationTime,
       completedAt: job.CompletionTime
     };
+    
+    console.log('서비스 응답:', response);
+    return response;
+    
   } catch (error) {
     console.error('Transcribe 작업 상태 확인 오류:', error);
-    console.error('오류 스택:', error.stack);
     throw error;
   }
 };

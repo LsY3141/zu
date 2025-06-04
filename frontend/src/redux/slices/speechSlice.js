@@ -212,18 +212,25 @@ const speechSlice = createSlice({
         state.error = null;
       })
       .addCase(checkTranscriptionStatus.fulfilled, (state, action) => {
-        state.loading = false;
-        state.transcriptionJob = action.payload.job;
-        
-        if (action.payload.job.status === 'COMPLETED') {
-          state.transcriptionResults = action.payload.results;
-          state.message = '음성 변환이 완료되었습니다.';
-        } else if (action.payload.job.status === 'FAILED') {
-          state.error = '음성 변환에 실패했습니다.';
-        } else {
-          state.message = `음성 변환 중: ${action.payload.job.progress || 0}%`;
-        }
-      })
+  console.log('상태 체크 성공:', action.payload);
+  state.loading = false;
+  state.transcriptionJob = action.payload.job;
+  
+  if (action.payload.job.status === 'COMPLETED') {
+    if (action.payload.results) {
+      console.log('변환 결과 설정:', action.payload.results);
+      state.transcriptionResults = action.payload.results;
+      state.message = '음성 변환이 완료되었습니다.';
+    } else {
+      console.log('변환 완료되었지만 결과 없음');
+      state.message = '음성 변환이 완료되었지만 결과를 가져오는 중입니다...';
+    }
+  } else if (action.payload.job.status === 'FAILED') {
+    state.error = '음성 변환에 실패했습니다.';
+  } else {
+    state.message = `음성 변환 중: ${action.payload.job.progress || 0}%`;
+  }
+})
       .addCase(checkTranscriptionStatus.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || '변환 상태 확인 실패';

@@ -2,7 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import styled from 'styled-components';
-import { FaArrowLeft, FaSave, FaTimes, FaTag, FaTags } from 'react-icons/fa';
+import { 
+  FaArrowLeft, 
+  FaSave, 
+  FaTimes, 
+  FaTag, 
+  FaTags,
+  FaEdit,
+  FaPlus,
+  FaFileAlt,
+  FaKeyboard,
+  FaLightbulb
+} from 'react-icons/fa';
 import { 
   fetchNoteById, 
   createNote, 
@@ -19,39 +30,319 @@ import Select from '../components/shared/Select';
 import Spinner from '../components/shared/Spinner';
 import Alert from '../components/shared/Alert';
 
+// Colors - 메인 페이지와 동일한 컬러 팔레트
+const colors = {
+  magenta: '#E91E63',
+  cyan: '#00BCD4', 
+  darkGray: '#424242',
+  lime: '#8BC34A',
+  lightGray: '#E0E0E0',
+  white: '#FFFFFF'
+};
+
+// Animation keyframes
+const animations = {
+  fadeIn: `
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  `,
+  slideIn: `
+    0% { transform: translateX(-20px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+  `,
+  scaleIn: `
+    0% { transform: scale(0.95); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  `
+};
+
+// Common styled component patterns
+const ClipPath = {
+  rectangle: 'polygon(0 0, calc(100% - 12px) 0, 100% 100%, 12px 100%)',
+  button: 'polygon(0 0, calc(100% - 8px) 0, 100% 100%, 8px 100%)',
+  card: 'polygon(0 0, calc(100% - 6px) 0, 100% 100%, 6px 100%)'
+};
+
 const EditorContainer = styled.div`
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, ${colors.lightGray} 0%, ${colors.white} 100%);
+  padding: 0;
+  margin: -20px;
+  animation: fadeIn 0.6s ease-out;
+  
+  @keyframes fadeIn {
+    ${animations.fadeIn}
+  }
 `;
 
-const EditorHeader = styled.div`
+const Header = styled.div`
+  background: linear-gradient(135deg, ${colors.white} 0%, #F8F9FA 100%);
+  padding: 30px 40px;
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg, ${colors.magenta}, ${colors.cyan}, ${colors.lime}) 1;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: ${colors.lime};
+    opacity: 0.1;
+    transform: rotate(45deg);
+  }
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
+`;
+
+const HeaderContent = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+  align-items: flex-start;
+  gap: 20px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
 `;
 
-const BackButton = styled(Button)`
-  margin-right: 10px;
+const TitleSection = styled.div`
+  animation: slideIn 0.6s ease-out;
+  
+  @keyframes slideIn {
+    ${animations.slideIn}
+  }
+  
+  h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0 0 8px;
+    background: linear-gradient(135deg, ${colors.darkGray} 0%, ${colors.magenta} 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    
+    svg {
+      color: ${colors.cyan};
+      font-size: 2rem;
+    }
+    
+    @media (max-width: 768px) {
+      font-size: 1.8rem;
+      
+      svg {
+        font-size: 1.6rem;
+      }
+    }
+  }
+  
+  .subtitle {
+    font-size: 15px;
+    color: ${colors.darkGray};
+    opacity: 0.8;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 44px;
+    
+    &::before {
+      content: '';
+      width: 4px;
+      height: 4px;
+      background: ${colors.cyan};
+      border-radius: 50%;
+    }
+    
+    @media (max-width: 768px) {
+      margin-left: 36px;
+    }
+  }
 `;
 
-const ActionButtons = styled.div`
+const HeaderActions = styled.div`
   display: flex;
-  gap: 10px;
+  gap: 12px;
+  align-items: center;
+  
+  @media (max-width: 768px) {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+`;
+
+const ActionButton = styled(Button)`
+  clip-path: ${ClipPath.button};
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+  
+  &.back-button {
+    background: linear-gradient(135deg, ${colors.lightGray} 0%, ${colors.white} 100%) !important;
+    border: 2px solid ${colors.lightGray} !important;
+    color: ${colors.darkGray} !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+    
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, ${colors.cyan}20, ${colors.lime}20) !important;
+      border-color: ${colors.cyan} !important;
+      color: ${colors.cyan} !important;
+      transform: translateY(-2px) !important;
+    }
+  }
+  
+  &.cancel-button {
+    background: transparent !important;
+    border: 2px solid ${colors.lightGray} !important;
+    color: ${colors.darkGray} !important;
+    
+    &:hover:not(:disabled) {
+      background: ${colors.magenta}10 !important;
+      border-color: ${colors.magenta} !important;
+      color: ${colors.magenta} !important;
+      transform: translateY(-2px) !important;
+    }
+  }
+  
+  &.save-button {
+    background: linear-gradient(135deg, ${colors.magenta} 0%, ${colors.cyan} 100%) !important;
+    border: none !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3) !important;
+    
+    &:hover:not(:disabled) {
+      background: linear-gradient(135deg, ${colors.cyan} 0%, ${colors.lime} 100%) !important;
+      transform: translateY(-2px) !important;
+      box-shadow: 0 8px 25px rgba(0, 188, 212, 0.4) !important;
+    }
+    
+    &:disabled {
+      background: ${colors.lightGray} !important;
+      color: ${colors.darkGray} !important;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+  }
+`;
+
+const ContentArea = styled.div`
+  flex: 1;
+  padding: 40px;
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
+`;
+
+const EditorGrid = styled.div`
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+  
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr;
+    gap: 25px;
+  }
+`;
+
+const MainEditor = styled.div`
+  background: ${colors.white};
+  padding: 30px;
+  clip-path: ${ClipPath.rectangle};
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  position: relative;
+  animation: scaleIn 0.6s ease-out;
+  
+  @keyframes scaleIn {
+    ${animations.scaleIn}
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, ${colors.magenta}, ${colors.cyan}, ${colors.lime});
+  }
+`;
+
+const Sidebar = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`;
+
+const SidebarCard = styled.div`
+  background: ${colors.white};
+  padding: 25px;
+  clip-path: ${ClipPath.rectangle};
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  position: relative;
+  animation: scaleIn 0.8s ease-out;
+  
+  @keyframes scaleIn {
+    ${animations.scaleIn}
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: ${({ $color }) => {
+      switch($color) {
+        case 'cyan': return `linear-gradient(90deg, ${colors.cyan}, ${colors.lime})`;
+        case 'magenta': return `linear-gradient(90deg, ${colors.magenta}, ${colors.cyan})`;
+        default: return `linear-gradient(90deg, ${colors.lime}, ${colors.cyan})`;
+      }
+    }};
+  }
+  
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 15px;
+    color: ${colors.darkGray};
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    
+    svg {
+      color: ${({ $color }) => {
+        switch($color) {
+          case 'cyan': return colors.cyan;
+          case 'magenta': return colors.magenta;
+          default: return colors.lime;
+        }
+      }};
+    }
+  }
 `;
 
 const EditorForm = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 20px;
 `;
 
-const EditorCard = styled.div`
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  border-radius: ${({ theme }) => theme.borderRadius.medium};
-  box-shadow: ${({ theme }) => theme.boxShadow.card};
-  padding: 20px;
-  margin-bottom: 20px;
+const FormSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 `;
 
 const TagsContainer = styled.div`
@@ -59,28 +350,55 @@ const TagsContainer = styled.div`
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
+  padding: 12px;
+  background: #F8F9FA;
+  border-radius: 0;
+  clip-path: ${ClipPath.card};
+  min-height: 45px;
+  border: 2px dashed ${colors.lightGray};
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: ${colors.cyan};
+    background: ${colors.cyan}10;
+  }
 `;
 
 const TagItem = styled.div`
   display: flex;
   align-items: center;
-  background-color: ${({ theme }) => theme.colors.primaryLight};
-  color: ${({ theme }) => theme.colors.primary};
-  padding: 5px 10px;
-  border-radius: ${({ theme }) => theme.borderRadius.small};
-  font-size: 14px;
+  background: linear-gradient(135deg, ${colors.cyan}20, ${colors.lime}20);
+  color: ${colors.darkGray};
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  clip-path: ${ClipPath.card};
+  border: 1px solid ${colors.cyan}30;
+  animation: scaleIn 0.3s ease-out;
+  
+  @keyframes scaleIn {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
   
   button {
     background: none;
     border: none;
-    color: ${({ theme }) => theme.colors.primary};
-    margin-left: 5px;
+    color: ${colors.magenta};
+    margin-left: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0;
-    font-size: 14px;
+    padding: 2px;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      color: ${colors.magenta};
+      transform: scale(1.2);
+    }
   }
 `;
 
@@ -88,10 +406,100 @@ const TagInput = styled.div`
   display: flex;
   align-items: center;
   margin-top: 10px;
+  gap: 10px;
 `;
 
-const TagButton = styled(Button)`
-  margin-left: 10px;
+const AddTagButton = styled(Button)`
+  background: linear-gradient(135deg, ${colors.lime} 0%, ${colors.cyan} 100%) !important;
+  border: none !important;
+  clip-path: ${ClipPath.button};
+  font-weight: 600 !important;
+  box-shadow: 0 2px 8px rgba(139, 195, 74, 0.3) !important;
+  transition: all 0.3s ease !important;
+  padding: 8px 16px !important;
+  
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, ${colors.cyan} 0%, ${colors.magenta} 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 15px rgba(0, 188, 212, 0.4) !important;
+  }
+  
+  &:disabled {
+    background: ${colors.lightGray} !important;
+    color: ${colors.darkGray} !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+`;
+
+const HelpSection = styled.div`
+  .tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: ${colors.lime}10;
+    border-left: 3px solid ${colors.lime};
+    margin-bottom: 12px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: ${colors.darkGray};
+    
+    svg {
+      color: ${colors.lime};
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+  }
+`;
+
+const StyledTextArea = styled(TextArea)`
+  textarea {
+    background: #F8F9FA !important;
+    border: 2px solid transparent !important;
+    transition: all 0.3s ease !important;
+    font-family: 'Noto Sans KR', sans-serif !important;
+    line-height: 1.6 !important;
+    
+    &:focus {
+      background: ${colors.white} !important;
+      border-color: ${colors.cyan} !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(0, 188, 212, 0.2) !important;
+    }
+  }
+`;
+
+const StyledInput = styled(Input)`
+  input {
+    background: #F8F9FA !important;
+    border: 2px solid transparent !important;
+    transition: all 0.3s ease !important;
+    font-weight: 500 !important;
+    
+    &:focus {
+      background: ${colors.white} !important;
+      border-color: ${colors.cyan} !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(0, 188, 212, 0.2) !important;
+    }
+  }
+`;
+
+const StyledSelect = styled(Select)`
+  select {
+    background: #F8F9FA !important;
+    border: 2px solid transparent !important;
+    transition: all 0.3s ease !important;
+    font-weight: 500 !important;
+    
+    &:focus {
+      background: ${colors.white} !important;
+      border-color: ${colors.cyan} !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(0, 188, 212, 0.2) !important;
+    }
+  }
 `;
 
 const NoteEditor = ({ isEdit }) => {
@@ -118,7 +526,6 @@ const NoteEditor = ({ isEdit }) => {
   ];
   
   useEffect(() => {
-    // 수정 모드에서 노트 데이터 불러오기
     if (isEdit && id) {
       dispatch(fetchNoteById(id));
     }
@@ -130,7 +537,6 @@ const NoteEditor = ({ isEdit }) => {
     };
   }, [dispatch, isEdit, id]);
   
-  // 노트 데이터가 로드되면 폼에 반영
   useEffect(() => {
     if (isEdit && currentNote) {
       setFormData({
@@ -142,7 +548,6 @@ const NoteEditor = ({ isEdit }) => {
     }
   }, [isEdit, currentNote]);
   
-  // 성공 메시지 표시
   useEffect(() => {
     if (message) {
       dispatch(showNotification({
@@ -178,7 +583,6 @@ const NoteEditor = ({ isEdit }) => {
       [name]: value,
     }));
     
-    // 입력 시 해당 필드의 에러 메시지 초기화
     if (formErrors[name]) {
       setFormErrors(prev => ({
         ...prev,
@@ -237,130 +641,208 @@ const NoteEditor = ({ isEdit }) => {
   
   return (
     <EditorContainer>
-      <EditorHeader>
-        <BackButton 
-          variant="outline" 
-          size="small" 
-          onClick={handleCancel}
-          icon={<FaArrowLeft />}
-        >
-          뒤로 가기
-        </BackButton>
-        
-        <ActionButtons>
-          <Button 
-            variant="outline" 
-            size="small" 
-            onClick={handleCancel}
-            icon={<FaTimes />}
-          >
-            취소
-          </Button>
-          <Button 
-            size="small" 
-            onClick={handleSubmit}
-            icon={<FaSave />}
-            disabled={loading}
-          >
-            {loading ? '저장 중...' : (isEdit ? '수정하기' : '저장하기')}
-          </Button>
-        </ActionButtons>
-      </EditorHeader>
+      <Header>
+        <HeaderContent>
+          <TitleSection>
+            <h1>
+              {isEdit ? <FaEdit /> : <FaPlus />}
+              {isEdit ? '노트 수정' : '새 노트 작성'}
+            </h1>
+            <div className="subtitle">
+              {isEdit ? '기존 노트를 수정합니다' : '새로운 아이디어를 노트로 만들어보세요'}
+            </div>
+          </TitleSection>
+          
+          <HeaderActions>
+            <ActionButton 
+              className="back-button"
+              size="small" 
+              onClick={handleCancel}
+              icon={<FaArrowLeft />}
+            >
+              뒤로 가기
+            </ActionButton>
+            
+            <ActionButton 
+              className="cancel-button"
+              variant="outline" 
+              size="small" 
+              onClick={handleCancel}
+              icon={<FaTimes />}
+            >
+              취소
+            </ActionButton>
+            
+            <ActionButton 
+              className="save-button"
+              size="small" 
+              onClick={handleSubmit}
+              icon={<FaSave />}
+              disabled={loading}
+            >
+              {loading ? '저장 중...' : (isEdit ? '수정하기' : '저장하기')}
+            </ActionButton>
+          </HeaderActions>
+        </HeaderContent>
+      </Header>
       
       {error && (
-        <Alert
-          variant="error"
-          message={error}
-          marginBottom="20px"
-          onClose={() => dispatch(clearNoteError())}
-        />
+        <div style={{ padding: '0 40px' }}>
+          <Alert
+            variant="error"
+            message={error}
+            marginBottom="20px"
+            onClose={() => dispatch(clearNoteError())}
+          />
+        </div>
       )}
       
-      <EditorForm onSubmit={handleSubmit}>
-        <EditorCard>
-          <Input
-            name="title"
-            label="제목"
-            placeholder="노트 제목을 입력하세요"
-            value={formData.title}
-            onChange={handleChange}
-            error={formErrors.title}
-            disabled={loading}
-            required
-          />
+      <ContentArea>
+        <EditorGrid>
+          <MainEditor>
+            <EditorForm onSubmit={handleSubmit}>
+              <FormSection>
+                <StyledInput
+                  name="title"
+                  label="제목"
+                  placeholder="노트 제목을 입력하세요"
+                  value={formData.title}
+                  onChange={handleChange}
+                  error={formErrors.title}
+                  disabled={loading}
+                  icon={<FaFileAlt />}
+                  required
+                />
+                
+                <StyledTextArea
+                  name="content"
+                  label="내용"
+                  placeholder="여기에 노트 내용을 작성하세요..."
+                  value={formData.content}
+                  onChange={handleChange}
+                  error={formErrors.content}
+                  disabled={loading}
+                  minHeight="400px"
+                  required
+                />
+              </FormSection>
+            </EditorForm>
+          </MainEditor>
           
-          <TextArea
-            name="content"
-            label="내용"
-            placeholder="노트 내용을 입력하세요"
-            value={formData.content}
-            onChange={handleChange}
-            error={formErrors.content}
-            disabled={loading}
-            minHeight="300px"
-            required
-          />
-          
-          <Select
-            name="category"
-            label="카테고리"
-            value={formData.category}
-            onChange={handleChange}
-            options={categories}
-            disabled={loading}
-          />
-          
-          <div>
-            <label 
-              style={{ 
-                display: 'block', 
-                marginBottom: '6px', 
-                fontSize: '14px', 
-                fontWeight: 500 
-              }}
-            >
-              태그
-            </label>
-            
-            <TagsContainer>
-              {formData.tags.map((tag, index) => (
-                <TagItem key={index}>
-                  <FaTag style={{ marginRight: '5px' }} />
-                  {tag}
-                  <button 
-                    type="button"
-                    onClick={() => handleRemoveTag(tag)}
-                    title="태그 삭제"
-                  >
-                    &times;
-                  </button>
-                </TagItem>
-              ))}
-            </TagsContainer>
-            
-            <TagInput>
-              <Input
-                name="tagInput"
-                placeholder="태그를 입력하고 엔터를 누르세요"
-                value={tagInput}
-                onChange={handleTagInputChange}
-                onKeyPress={handleTagKeyPress}
+          <Sidebar>
+            <SidebarCard $color="cyan">
+              <h3>
+                <FaTags />
+                카테고리 & 태그
+              </h3>
+              
+              <StyledSelect
+                name="category"
+                label="카테고리"
+                value={formData.category}
+                onChange={handleChange}
+                options={categories}
                 disabled={loading}
-                icon={<FaTags />}
               />
-              <TagButton
-                type="button"
-                variant="outline"
-                size="small"
-                onClick={handleAddTag}
-                disabled={!tagInput.trim() || loading}
-              >
-                추가
-              </TagButton>
-            </TagInput>
-          </div>
-        </EditorCard>
-      </EditorForm>
+              
+              <div style={{ marginTop: '20px' }}>
+                <label 
+                  style={{ 
+                    display: 'block', 
+                    marginBottom: '8px', 
+                    fontSize: '14px', 
+                    fontWeight: 600,
+                    color: colors.darkGray
+                  }}
+                >
+                  태그
+                </label>
+                
+                <TagsContainer>
+                  {formData.tags.length === 0 ? (
+                    <div style={{ 
+                      color: colors.darkGray, 
+                      opacity: 0.6, 
+                      fontSize: '13px',
+                      fontStyle: 'italic'
+                    }}>
+                      태그를 추가해보세요
+                    </div>
+                  ) : (
+                    formData.tags.map((tag, index) => (
+                      <TagItem key={index}>
+                        <FaTag style={{ marginRight: '5px', fontSize: '10px' }} />
+                        {tag}
+                        <button 
+                          type="button"
+                          onClick={() => handleRemoveTag(tag)}
+                          title="태그 삭제"
+                        >
+                          ×
+                        </button>
+                      </TagItem>
+                    ))
+                  )}
+                </TagsContainer>
+                
+                <TagInput>
+                  <StyledInput
+                    name="tagInput"
+                    placeholder="태그를 입력하세요"
+                    value={tagInput}
+                    onChange={handleTagInputChange}
+                    onKeyPress={handleTagKeyPress}
+                    disabled={loading}
+                    icon={<FaTag />}
+                  />
+                  <AddTagButton
+                    type="button"
+                    size="small"
+                    onClick={handleAddTag}
+                    disabled={!tagInput.trim() || loading}
+                    icon={<FaPlus />}
+                  >
+                    추가
+                  </AddTagButton>
+                </TagInput>
+              </div>
+            </SidebarCard>
+            
+            <SidebarCard $color="lime">
+              <h3>
+                <FaLightbulb />
+                작성 도움말
+              </h3>
+              
+              <HelpSection>
+                <div className="tip">
+                  <FaKeyboard />
+                  <div>
+                    <strong>단축키:</strong><br />
+                    Ctrl+S로 빠르게 저장할 수 있습니다.
+                  </div>
+                </div>
+                
+                <div className="tip">
+                  <FaTag />
+                  <div>
+                    <strong>태그 활용:</strong><br />
+                    관련 키워드를 태그로 추가하면 나중에 쉽게 찾을 수 있어요.
+                  </div>
+                </div>
+                
+                <div className="tip">
+                  <FaFileAlt />
+                  <div>
+                    <strong>마크다운 지원:</strong><br />
+                    **굵게**, *기울임*, `코드` 등의 문법을 사용할 수 있습니다.
+                  </div>
+                </div>
+              </HelpSection>
+            </SidebarCard>
+          </Sidebar>
+        </EditorGrid>
+      </ContentArea>
     </EditorContainer>
   );
 };

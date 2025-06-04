@@ -13,12 +13,14 @@ import {
   FaShareAlt, 
   FaTrash, 
   FaEdit,
-  FaSearch
+  FaSearch,
+  FaPlus,
+  FaClock,
+  FaTag
 } from 'react-icons/fa';
-import { formatRelativeTime, formatDateWithTimezone } from '../utils/formatters';
+import { formatRelativeTime } from '../utils/formatters';
 import { setFilters, setPagination } from '../redux/slices/noteSlice';
 import { setViewMode } from '../redux/slices/uiSlice';
-import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import Input from '../components/shared/Input';
 import Select from '../components/shared/Select';
@@ -26,105 +28,351 @@ import Spinner from '../components/shared/Spinner';
 import Pagination from '../components/shared/Pagination';
 import useNotes from '../hooks/useNotes';
 
+// Colors - 메인 페이지와 동일한 컬러 팔레트
+const colors = {
+  magenta: '#E91E63',
+  cyan: '#00BCD4', 
+  darkGray: '#424242',
+  lime: '#8BC34A',
+  lightGray: '#E0E0E0',
+  white: '#FFFFFF'
+};
 
-// ========================= STYLED COMPONENTS =========================
+// Animation keyframes
+const animations = {
+  fadeIn: `
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  `,
+  slideIn: `
+    0% { transform: translateX(-20px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+  `,
+  scaleIn: `
+    0% { transform: scale(0.95); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  `
+};
+
+// Common styled component patterns
+const ClipPath = {
+  rectangle: 'polygon(0 0, calc(100% - 12px) 0, 100% 100%, 12px 100%)',
+  button: 'polygon(0 0, calc(100% - 8px) 0, 100% 100%, 8px 100%)',
+  card: 'polygon(0 0, calc(100% - 6px) 0, 100% 100%, 6px 100%)'
+};
+
 const NoteListContainer = styled.div`
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, ${colors.lightGray} 0%, ${colors.white} 100%);
+  padding: 0;
+  margin: -20px;
+  animation: fadeIn 0.6s ease-out;
+  
+  @keyframes fadeIn {
+    ${animations.fadeIn}
+  }
 `;
 
 const Header = styled.div`
+  background: linear-gradient(135deg, ${colors.white} 0%, #F8F9FA 100%);
+  padding: 30px 40px;
+  border-bottom: 3px solid transparent;
+  border-image: linear-gradient(90deg, ${colors.magenta}, ${colors.cyan}, ${colors.lime}) 1;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100px;
+    height: 100px;
+    background: ${colors.lime};
+    opacity: 0.1;
+    transform: rotate(45deg);
+  }
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
+`;
+
+const HeaderTop = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 30px;
+  gap: 20px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
 `;
 
 const TitleSection = styled.div`
+  animation: slideIn 0.6s ease-out;
+  
+  @keyframes slideIn {
+    ${animations.slideIn}
+  }
+  
   h1 {
-    font-size: 24px;
-    font-weight: 600;
-    margin: 0 0 5px;
-    color: ${({ theme }) => theme.colors.text};
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0 0 8px;
+    background: linear-gradient(135deg, ${colors.darkGray} 0%, ${colors.magenta} 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    
+    @media (max-width: 768px) {
+      font-size: 1.8rem;
+    }
   }
   
   .count {
-    font-size: 14px;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 15px;
+    color: ${colors.darkGray};
+    opacity: 0.8;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    
+    &::before {
+      content: '';
+      width: 4px;
+      height: 4px;
+      background: ${colors.cyan};
+      border-radius: 50%;
+    }
   }
 `;
 
-const Controls = styled.div`
+const HeaderActions = styled.div`
   display: flex;
-  gap: 10px;
+  gap: 15px;
+  align-items: center;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+`;
+
+const CreateButton = styled(Button)`
+  background: linear-gradient(135deg, ${colors.magenta} 0%, ${colors.cyan} 100%) !important;
+  border: none !important;
+  clip-path: ${ClipPath.button};
+  font-weight: 600 !important;
+  box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3) !important;
+  transition: all 0.3s ease !important;
+  
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, ${colors.cyan} 0%, ${colors.lime} 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(0, 188, 212, 0.4) !important;
+  }
 `;
 
 const ViewButtons = styled.div`
   display: flex;
   gap: 5px;
+  background: ${colors.white};
+  padding: 4px;
+  border-radius: 0;
+  clip-path: ${ClipPath.rectangle};
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 `;
 
 const ViewButton = styled.button`
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: ${({ theme }) => theme.borderRadius.small};
-  background-color: ${({ $active, theme }) => 
-    $active ? theme.colors.primary : 'transparent'};
-  color: ${({ $active, theme }) => 
-    $active ? 'white' : theme.colors.text};
+  background: ${({ $active }) => 
+    $active ? `linear-gradient(135deg, ${colors.magenta}, ${colors.cyan})` : 'transparent'};
+  color: ${({ $active }) => $active ? colors.white : colors.darkGray};
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
+  font-size: 16px;
   
   &:hover {
-    background-color: ${({ $active, theme }) => 
-      $active ? theme.colors.primary : theme.colors.sidebarHover};
+    background: ${({ $active }) => 
+      $active ? `linear-gradient(135deg, ${colors.magenta}, ${colors.cyan})` : colors.lightGray};
+    transform: ${({ $active }) => $active ? 'none' : 'scale(1.05)'};
   }
 `;
 
 const FilterSection = styled.div`
   display: grid;
   grid-template-columns: 2fr 1fr 1.5fr;
-  gap: 15px;
-  margin-bottom: 20px;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  padding: 15px;
-  border-radius: ${({ theme }) => theme.borderRadius.medium};
-  box-shadow: ${({ theme }) => theme.boxShadow.card};
-`;
-
-const FilterItem = styled.div`
-  &:last-child {
-    display: flex;
-    align-items: end;
-    gap: 8px;
+  gap: 20px;
+  background: ${colors.white};
+  padding: 25px;
+  border-radius: 0;
+  clip-path: ${ClipPath.rectangle};
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  position: relative;
+  animation: scaleIn 0.5s ease-out;
+  
+  @keyframes scaleIn {
+    ${animations.scaleIn}
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, ${colors.magenta}, ${colors.cyan}, ${colors.lime});
+  }
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding: 20px;
   }
 `;
 
-// ========================= NOTE ITEMS =========================
+const SearchInputContainer = styled.div`
+  position: relative;
+  
+  input {
+    padding-right: 50px !important;
+    background: #F8F9FA !important;
+    border: 2px solid transparent !important;
+    transition: all 0.3s ease !important;
+    
+    &:focus {
+      background: ${colors.white} !important;
+      border-color: ${colors.cyan} !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(0, 188, 212, 0.2) !important;
+    }
+  }
+`;
+
+const SearchButton = styled.button`
+  position: absolute;
+  right: 8px;
+  bottom: 20px;
+  background: linear-gradient(135deg, ${colors.cyan}, ${colors.lime});
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 0;
+  clip-path: ${ClipPath.card};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  height: 36px;
+  width: 36px;
+  
+  &:hover {
+    background: linear-gradient(135deg, ${colors.magenta}, ${colors.cyan});
+    transform: scale(1.05);
+  }
+`;
+
+const SortSection = styled.div`
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  height: 100%;
+`;
+
+const SortButton = styled.button`
+  height: 46px;
+  width: 46px;
+  background: linear-gradient(135deg, ${colors.lightGray}, ${colors.white});
+  border: 2px solid ${colors.lightGray};
+  border-radius: 0;
+  clip-path: ${ClipPath.card};
+  color: ${colors.darkGray};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  margin-bottom: 16px;
+  
+  &:hover {
+    background: linear-gradient(135deg, ${colors.cyan}20, ${colors.lime}20);
+    border-color: ${colors.cyan};
+    color: ${colors.cyan};
+    transform: scale(1.05);
+  }
+`;
+
+const ContentArea = styled.div`
+  flex: 1;
+  padding: 40px;
+  
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
+`;
+
 const NoteGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 25px;
+  animation: fadeIn 0.8s ease-out;
+  
+  @keyframes fadeIn {
+    ${animations.fadeIn}
+  }
 `;
 
 const NoteList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 15px;
+  animation: fadeIn 0.8s ease-out;
+  
+  @keyframes fadeIn {
+    ${animations.fadeIn}
+  }
 `;
 
-const BaseNoteCard = styled(Card)`
+const BaseNoteCard = styled.div`
+  background: ${colors.white};
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
   position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, ${colors.magenta}, ${colors.cyan}, ${colors.lime});
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+  }
   
   &:hover {
-    box-shadow: ${({ theme }) => theme.boxShadow.hover};
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    
+    &::before {
+      transform: scaleX(1);
+    }
     
     .actions {
       opacity: 1;
@@ -134,157 +382,112 @@ const BaseNoteCard = styled(Card)`
 
 const ListCard = styled(BaseNoteCard)`
   padding: 0;
+  clip-path: ${ClipPath.rectangle};
   
   &:hover {
-    transform: translateX(5px);
+    transform: translateX(8px);
   }
 `;
 
 const GridCard = styled(BaseNoteCard)`
-  height: 240px;
+  height: 280px;
   display: flex;
   flex-direction: column;
+  clip-path: ${ClipPath.rectangle};
   
   &:hover {
-    transform: translateY(-5px);
-  }
-`;
-
-// ========================= SHARED COMPONENTS =========================
-const SearchInputContainer = styled.div`
-  position: relative;
-  width: 100%;
-  
-  input {
-    padding-right: 40px !important;
-  }
-`;
-
-const SearchButton = styled.button`
-  position: absolute;
-  right: 8px;
-  bottom: 20px;
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.primary};
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  z-index: 10;
-  height: 32px;
-  width: 32px;
-  
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryLight};
-  }
-`;
-
-const SortSection = styled.div`
-  display: flex;
-  align-items: end;
-  gap: 8px;
-  height: 100%;
-`;
-
-const SortSelectWrapper = styled.div`
-  flex: 1;
-`;
-
-const SortButton = styled.button`
-  height: 42px;
-  width: 42px;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.borderRadius.small};
-  color: ${({ theme }) => theme.colors.primary};
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  margin-bottom: 16px;
-  
-  &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryLight};
-    border-color: ${({ theme }) => theme.colors.primary};
+    transform: translateY(-8px);
   }
 `;
 
 const NoteActions = styled.div`
   position: absolute;
-  top: 15px;
-  right: 15px;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
   display: flex;
-  gap: 5px;
+  gap: 6px;
   opacity: 0;
-  transition: opacity 0.2s;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  border-radius: 6px;
-  padding: 4px;
-  box-shadow: ${({ theme }) => theme.boxShadow.card};
+  transition: all 0.3s ease;
+  background: ${colors.white}F0;
+  backdrop-filter: blur(10px);
+  border-radius: 0;
+  clip-path: ${ClipPath.card};
+  padding: 6px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  z-index: 10;
 `;
 
 const ActionButton = styled.button`
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 4px;
-  background-color: transparent;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  border-radius: 0;
+  clip-path: ${ClipPath.card};
+  background: transparent;
+  color: ${colors.darkGray};
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  font-size: 14px;
   
   &:hover {
-    background-color: ${({ theme, $color }) => 
-      $color ? `${theme.colors[$color]}20` : theme.colors.sidebarHover};
-    color: ${({ theme, $color }) => 
-      $color ? theme.colors[$color] : theme.colors.text};
+    background: ${({ $color }) => {
+      switch($color) {
+        case 'danger': return `${colors.magenta}20`;
+        case 'info': return `${colors.cyan}20`;
+        default: return `${colors.lime}20`;
+      }
+    }};
+    color: ${({ $color }) => {
+      switch($color) {
+        case 'danger': return colors.magenta;
+        case 'info': return colors.cyan;
+        default: return colors.lime;
+      }
+    }};
+    transform: scale(1.1);
   }
 `;
 
 const NoteTypeTag = styled.div`
   display: flex;
   align-items: center;
-  background-color: ${({ theme, $isVoice }) => 
-    $isVoice ? theme.colors.warning + '20' : theme.colors.info + '20'};
-  color: ${({ theme, $isVoice }) => 
-    $isVoice ? theme.colors.warning : theme.colors.info};
-  padding: 4px 8px;
-  border-radius: 12px;
+  background: ${({ $isVoice }) => 
+    $isVoice ? `${colors.cyan}20` : `${colors.magenta}20`};
+  color: ${({ $isVoice }) => 
+    $isVoice ? colors.cyan : colors.magenta};
+  padding: 6px 12px;
   font-size: ${({ $small }) => $small ? '11px' : '12px'};
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
+  clip-path: ${ClipPath.card};
   
   svg {
-    margin-right: 4px;
+    margin-right: 6px;
     font-size: ${({ $small }) => $small ? '10px' : '12px'};
   }
 `;
 
-// ========================= LIST VIEW COMPONENTS =========================
 const ListContent = styled.div`
-  padding: 20px;
-  padding-right: 100px; /* 액션 버튼 공간 확보 */
+  padding: 25px;
+  padding-right: 25px;
+  position: relative;
 `;
 
 const ListHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 15px;
+  margin-bottom: 12px;
   
   h2 {
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 18px;
+    font-weight: 600;
     margin: 0;
-    color: ${({ theme }) => theme.colors.text};
+    color: ${colors.darkGray};
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -294,59 +497,62 @@ const ListHeader = styled.div`
 
 const Excerpt = styled.div`
   font-size: 14px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  margin-bottom: 8px;
+  color: ${colors.darkGray};
+  opacity: 0.8;
+  margin-bottom: 15px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  line-height: 1.4;
+  line-height: 1.5;
 `;
 
 const Meta = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
   font-size: 12px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${colors.darkGray};
+  opacity: 0.7;
 `;
 
 const Tags = styled.div`
   display: flex;
-  gap: 5px;
+  gap: 6px;
   flex-wrap: wrap;
 `;
 
 const Tag = styled.span`
-  background-color: ${({ theme }) => theme.colors.primaryLight};
-  color: ${({ theme }) => theme.colors.primary};
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 11px;
+  background: ${colors.cyan}15;
+  color: #000000;
+  padding: 3px 8px;
+  font-size: 10px;
+  clip-path: ${ClipPath.card};
+  font-weight: 600;
   white-space: nowrap;
+  border: 1px solid ${colors.cyan}30;
 `;
 
 const DateDisplay = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  margin-left: auto;
-  text-align: right;
+  color: ${colors.darkGray};
+  opacity: 0.6;
+  
+  svg {
+    font-size: 10px;
+  }
   
   .main-date {
     font-weight: 500;
   }
-  
-  .debug-info {
-    opacity: 0.7;
-    font-size: 10px;
-    margin-top: 2px;
-  }
 `;
 
-// ========================= GRID VIEW COMPONENTS =========================
 const GridContent = styled.div`
   flex: 1;
-  padding: 20px;
+  padding: 25px;
   overflow: hidden;
 `;
 
@@ -354,15 +560,16 @@ const GridHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 15px;
   
   h2 {
     font-size: 16px;
-    font-weight: 500;
+    font-weight: 600;
     margin: 0;
-    color: ${({ theme }) => theme.colors.text};
+    color: ${colors.darkGray};
     flex: 1;
-    margin-right: 10px;
+    margin-right: 15px;
+    line-height: 1.3;
   }
 `;
 
@@ -371,38 +578,53 @@ const GridFooter = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-top: auto;
-  padding: 15px 20px;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 20px 25px;
+  border-top: 2px solid ${colors.lightGray};
   font-size: 12px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: ${colors.darkGray};
+  opacity: 0.7;
 `;
 
-// ========================= EMPTY STATE =========================
 const EmptyState = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: 60px 40px;
   text-align: center;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  border-radius: ${({ theme }) => theme.borderRadius.medium};
-  box-shadow: ${({ theme }) => theme.boxShadow.card};
+  background: ${colors.white};
+  border-radius: 0;
+  clip-path: ${ClipPath.rectangle};
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, ${colors.magenta}, ${colors.cyan}, ${colors.lime});
+  }
   
   .icon {
-    font-size: 48px;
-    color: ${({ theme }) => theme.colors.primary};
-    margin-bottom: 20px;
+    font-size: 4rem;
+    background: linear-gradient(135deg, ${colors.magenta}, ${colors.cyan});
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 25px;
   }
   
   .text {
-    font-size: 16px;
-    color: ${({ theme }) => theme.colors.textSecondary};
-    margin: 0 0 20px;
+    font-size: 18px;
+    color: ${colors.darkGray};
+    margin: 0 0 25px;
+    font-weight: 500;
   }
 `;
 
-// ========================= CONSTANTS =========================
 const CATEGORIES = [
   { value: '전체', label: '전체' },
   { value: '기본', label: '기본' },
@@ -412,47 +634,39 @@ const CATEGORIES = [
 ];
 
 const SORT_OPTIONS = [
-  { value: 'createdAt', label: '생성일' },      // 첫 번째로 이동
+  { value: 'createdAt', label: '생성일' },
   { value: 'updatedAt', label: '최근 수정일' },
   { value: 'title', label: '제목' },
 ];
 
-// ========================= MAIN COMPONENT =========================
 const NoteListComponent = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { viewMode } = useSelector(state => state.ui);
   const { notes, loading, filters, pagination, handleTrashNote } = useNotes();
   
-  // 로컬 검색 상태 (Redux 상태와 동기화)
   const [localSearchText, setLocalSearchText] = useState(filters.searchText || '');
 
-  // Redux 필터 상태가 변경되면 로컬 상태도 업데이트 (헤더에서 검색했을 때)
   useEffect(() => {
     setLocalSearchText(filters.searchText || '');
   }, [filters.searchText]);
 
-  // ========================= HANDLERS =========================
   const handleViewModeChange = (mode) => dispatch(setViewMode(mode));
   
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     if (name === 'searchText') {
-      // 검색어는 로컬 상태만 업데이트
       setLocalSearchText(value);
     } else {
-      // 다른 필터는 바로 적용
       dispatch(setFilters({ [name]: value }));
     }
   };
   
-  // 검색 실행 함수
   const handleSearch = () => {
     dispatch(setFilters({ searchText: localSearchText }));
-    dispatch(setPagination({ page: 1 })); // 검색 시 첫 페이지로
+    dispatch(setPagination({ page: 1 }));
   };
   
-  // Enter 키로 검색
   const handleSearchKeyPress = (e) => {
     if (e.key === 'Enter') {
       handleSearch();
@@ -485,37 +699,12 @@ const NoteListComponent = () => {
     handleTrashNote(noteId);
   };
 
-  // ========================= UTILITIES =========================
   const truncateText = (text, maxLength = 150) => {
     if (!text) return '';
     return text.length <= maxLength ? text : text.slice(0, maxLength) + '...';
   };
 
-  // 날짜 포맷팅 및 디버깅 함수
-  const formatDate = (date, noteId, noteTitle) => {
-    const noteDate = new Date(date);
-    const formatted = noteDate.toLocaleDateString('ko-KR', { 
-      month: 'short', 
-      day: 'numeric',
-      year: noteDate.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-    });
-    
-    // 디버깅용 로그
-    console.log('날짜 포맷팅 디버그:', {
-      noteId,
-      noteTitle,
-      originalDate: date,
-      parsedDate: noteDate,
-      formattedDate: formatted,
-      isToday: noteDate.toDateString() === new Date().toDateString(),
-      daysDifference: Math.floor((new Date() - noteDate) / (1000 * 60 * 60 * 24))
-    });
-    
-    return formatted;
-  };
-
-  // 상대 시간 포맷팅
-  const formatRelativeTime = (date) => {
+  const formatRelativeTimeCustom = (date) => {
     const now = new Date();
     const noteDate = new Date(date);
     const diffMs = now - noteDate;
@@ -524,7 +713,10 @@ const NoteListComponent = () => {
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     
     if (diffDays > 7) {
-      return formatDate(date);
+      return noteDate.toLocaleDateString('ko-KR', { 
+        month: 'short', 
+        day: 'numeric' 
+      });
     } else if (diffDays > 0) {
       return `${diffDays}일 전`;
     } else if (diffHours > 0) {
@@ -536,7 +728,6 @@ const NoteListComponent = () => {
     }
   };
 
-  // ========================= RENDER COMPONENTS =========================
   const renderActions = (note) => (
     <NoteActions className="actions">
       <ActionButton onClick={(e) => handleEdit(e, note._id)} title="수정">
@@ -551,33 +742,6 @@ const NoteListComponent = () => {
     </NoteActions>
   );
 
-  const renderDateInfo = (note) => {
-    // 노트 렌더링 시 날짜 정보 디버깅
-    console.log('노트 렌더링 날짜 디버그:', {
-      id: note._id,
-      title: note.title,
-      createdAt: note.createdAt,
-      updatedAt: note.updatedAt,
-      createdAtType: typeof note.createdAt,
-      updatedAtType: typeof note.updatedAt,
-      createdAtFormatted: formatDate(note.createdAt, note._id, note.title),
-      updatedAtFormatted: formatDate(note.updatedAt, note._id, note.title)
-    });
-
-    return (
-      <DateDisplay>
-        <div className="main-date">
-          {formatRelativeTime(note.updatedAt)}
-        </div>
-        {process.env.NODE_ENV === 'development' && (
-          <div className="debug-info" title={`생성: ${note.createdAt} | 수정: ${note.updatedAt}`}>
-            수정: {formatDate(note.updatedAt, note._id, note.title)}
-          </div>
-        )}
-      </DateDisplay>
-    );
-  };
-
   const renderListItem = (note) => (
     <ListCard key={note._id} onClick={() => handleNoteClick(note._id)}>
       {renderActions(note)}
@@ -586,18 +750,21 @@ const NoteListComponent = () => {
           <h2>{note.title}</h2>
           <NoteTypeTag $isVoice={note.isVoice}>
             {note.isVoice ? <FaMicrophone /> : <FaStickyNote />}
-            {note.isVoice ? '음성 노트' : '텍스트 노트'}
+            {note.isVoice ? '음성' : '텍스트'}
           </NoteTypeTag>
         </ListHeader>
         <Excerpt>{truncateText(note.content)}</Excerpt>
         <Meta>
           <Tags>
-            {note.tags?.map((tag, index) => (
+            {note.tags?.slice(0, 3).map((tag, index) => (
               <Tag key={index}>{tag}</Tag>
             ))}
             {note.category && <Tag>{note.category}</Tag>}
           </Tags>
-          {renderDateInfo(note)}
+          <DateDisplay>
+            <FaClock />
+            <span className="main-date">{formatRelativeTimeCustom(note.updatedAt)}</span>
+          </DateDisplay>
         </Meta>
       </ListContent>
     </ListCard>
@@ -615,130 +782,129 @@ const NoteListComponent = () => {
       <GridFooter>
         <NoteTypeTag $isVoice={note.isVoice} $small>
           {note.isVoice ? <FaMicrophone /> : <FaStickyNote />}
-          {note.isVoice ? '음성 노트' : '텍스트 노트'}
+          {note.isVoice ? '음성' : '텍스트'}
         </NoteTypeTag>
-        {renderDateInfo(note)}
+        <DateDisplay>
+          <FaClock />
+          <span>{formatRelativeTimeCustom(note.updatedAt)}</span>
+        </DateDisplay>
       </GridFooter>
     </GridCard>
   );
 
-  // ========================= MAIN RENDER =========================
   if (loading) return <Spinner fullHeight />;
 
   return (
     <NoteListContainer>
-      {/* Header */}
       <Header>
-        <TitleSection>
-          <h1>전체 노트</h1>
-          <div className="count">총 {pagination.total}개의 노트</div>
-        </TitleSection>
-        
-        <Controls>
-          <Button onClick={handleCreateNote} icon={<FaStickyNote />}>
-            새 노트 작성
-          </Button>
+        <HeaderTop>
+          <TitleSection>
+            <h1>전체 노트</h1>
+            <div className="count">총 {pagination.total}개의 노트</div>
+          </TitleSection>
           
-          <ViewButtons>
-            <ViewButton
-              $active={viewMode === 'list'}
-              onClick={() => handleViewModeChange('list')}
-              title="리스트 보기"
+          <HeaderActions>
+            <CreateButton onClick={handleCreateNote} icon={<FaPlus />}>
+              새 노트 작성
+            </CreateButton>
+            
+            <ViewButtons>
+              <ViewButton
+                $active={viewMode === 'list'}
+                onClick={() => handleViewModeChange('list')}
+                title="리스트 보기"
+              >
+                <FaList />
+              </ViewButton>
+              <ViewButton
+                $active={viewMode === 'grid'}
+                onClick={() => handleViewModeChange('grid')}
+                title="그리드 보기"
+              >
+                <FaTh />
+              </ViewButton>
+            </ViewButtons>
+          </HeaderActions>
+        </HeaderTop>
+
+        <FilterSection>
+          <SearchInputContainer>
+            <Input
+              name="searchText"
+              placeholder="노트를 검색하세요..."
+              value={localSearchText}
+              onChange={handleFilterChange}
+              onKeyPress={handleSearchKeyPress}
+              icon={<FaFilter />}
+            />
+            <SearchButton onClick={handleSearch} title="검색">
+              <FaSearch size={14} />
+            </SearchButton>
+          </SearchInputContainer>
+          
+          <div>
+            <Select
+              name="category"
+              value={filters.category}
+              onChange={handleFilterChange}
+              options={CATEGORIES}
+            />
+          </div>
+          
+          <SortSection>
+            <div style={{ flex: 1 }}>
+              <Select
+                name="sortBy"
+                value={filters.sortBy}
+                onChange={handleFilterChange}
+                options={SORT_OPTIONS}
+              />
+            </div>
+            <SortButton
+              onClick={handleSortToggle}
+              title={filters.sortOrder === 'desc' ? '내림차순' : '오름차순'}
             >
-              <FaList />
-            </ViewButton>
-            <ViewButton
-              $active={viewMode === 'grid'}
-              onClick={() => handleViewModeChange('grid')}
-              title="그리드 보기"
-            >
-              <FaTh />
-            </ViewButton>
-          </ViewButtons>
-        </Controls>
+              {filters.sortOrder === 'desc' ? <FaSortAmountDown /> : <FaSortAmountUp />}
+            </SortButton>
+          </SortSection>
+        </FilterSection>
       </Header>
 
-      {/* Filters */}
-      <FilterSection style={{ 
-        display: 'grid', 
-        gridTemplateColumns: '2fr 1fr 1.5fr',
-        gap: '15px'
-      }}>
-        <SearchInputContainer>
-          <Input
-            name="searchText"
-            placeholder="노트 검색..."
-            value={localSearchText}
-            onChange={handleFilterChange}
-            onKeyPress={handleSearchKeyPress}
-            icon={<FaFilter />}
-          />
-          <SearchButton onClick={handleSearch} title="검색">
-            <FaSearch size={14} />
-          </SearchButton>
-        </SearchInputContainer>
-        
-        <div>
-          <Select
-            name="category"
-            value={filters.category}
-            onChange={handleFilterChange}
-            options={CATEGORIES}
-          />
-        </div>
-        
-        <SortSection>
-          <SortSelectWrapper>
-            <Select
-              name="sortBy"
-              value={filters.sortBy}
-              onChange={handleFilterChange}
-              options={SORT_OPTIONS}
+      <ContentArea>
+        {notes.length > 0 ? (
+          <>
+            {viewMode === 'list' ? (
+              <NoteList>
+                {notes.map(renderListItem)}
+              </NoteList>
+            ) : (
+              <NoteGrid>
+                {notes.map(renderGridItem)}
+              </NoteGrid>
+            )}
+            
+            <Pagination 
+              currentPage={pagination.page}
+              totalPages={Math.ceil(pagination.total / pagination.limit)}
+              onPageChange={handlePageChange}
             />
-          </SortSelectWrapper>
-          <SortButton
-            onClick={handleSortToggle}
-            title={filters.sortOrder === 'desc' ? '내림차순' : '오름차순'}
-          >
-            {filters.sortOrder === 'desc' ? <FaSortAmountDown /> : <FaSortAmountUp />}
-          </SortButton>
-        </SortSection>
-      </FilterSection>
-
-      {/* Content */}
-      {notes.length > 0 ? (
-        <>
-          {viewMode === 'list' ? (
-            <NoteList>
-              {notes.map(renderListItem)}
-            </NoteList>
-          ) : (
-            <NoteGrid>
-              {notes.map(renderGridItem)}
-            </NoteGrid>
-          )}
-          
-          <Pagination 
-            currentPage={pagination.page}
-            totalPages={Math.ceil(pagination.total / pagination.limit)}
-            onPageChange={handlePageChange}
-          />
-        </>
-      ) : (
-        <EmptyState>
-          <div className="icon">
-            <FaStickyNote />
-          </div>
-          <div className="text">
-            {localSearchText
-              ? `"${localSearchText}" 검색 결과가 없습니다.`
-              : '노트가 없습니다. 새 노트를 작성해보세요!'}
-          </div>
-          <Button onClick={handleCreateNote} icon={<FaStickyNote />}>
-            새 노트 작성하기
-          </Button>
-        </EmptyState>
-      )}
+          </>
+        ) : (
+          <EmptyState>
+            <div className="icon">
+              <FaStickyNote />
+            </div>
+            <div className="text">
+              {localSearchText
+                ? `"${localSearchText}" 검색 결과가 없습니다.`
+                : '아직 작성된 노트가 없습니다. 첫 번째 노트를 만들어보세요!'}
+            </div>
+            <CreateButton onClick={handleCreateNote} icon={<FaPlus />}>
+              새 노트 작성하기
+            </CreateButton>
+          </EmptyState>
+        )}
+      </ContentArea>
     </NoteListContainer>
   );
 };

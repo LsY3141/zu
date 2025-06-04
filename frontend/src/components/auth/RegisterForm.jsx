@@ -179,10 +179,16 @@ const RegisterForm = () => {
         fullWidth
         disabled={loading}
         icon={<FaUserPlus />}
-        style={{ marginTop: '20px' }}
+        style={{
+          background: 'linear-gradient(135deg, #E91E63 0%, #00BCD4 100%)',
+          border: 'none',
+          clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 100%, 12px 100%)',
+          boxShadow: '0 4px 15px rgba(233, 30, 99, 0.3)',
+          marginTop: '20px'
+        }}
       >
-        {loading ? '가입 중...' : '회원가입'}
-      </Button>
+  {loading ? '가입 중...' : '회원가입'}
+</Button>
     </FormContainer>
   );
 };
