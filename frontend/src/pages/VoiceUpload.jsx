@@ -14,7 +14,11 @@ import {
   FaSyncAlt,
   FaFileAudio,
   FaListAlt,
-  FaGlobe
+  FaGlobe,
+  FaPlay,
+  FaPause,
+  FaCheck,
+  FaArrowRight
 } from 'react-icons/fa';
 import { 
   uploadSpeechFile, 
@@ -26,7 +30,6 @@ import {
   setFileUploadProgress,
 } from '../redux/slices/speechSlice';
 import { showNotification } from '../redux/slices/uiSlice';
-import Card from '../components/shared/Card';
 import Button from '../components/shared/Button';
 import Input from '../components/shared/Input';
 import TextArea from '../components/shared/TextArea';
@@ -36,162 +39,420 @@ import Alert from '../components/shared/Alert';
 import useVoiceRecorder from '../hooks/useVoiceRecorder';
 import { secondsToTimeFormat, fileSize } from '../utils/formatters';
 
+// Colors - 메인페이지와 동일한 컬러 팔레트
+const colors = {
+  magenta: '#E91E63',
+  cyan: '#00BCD4', 
+  darkGray: '#424242',
+  lime: '#8BC34A',
+  lightGray: '#E0E0E0',
+  white: '#FFFFFF'
+};
+
+// Animation keyframes
+const animations = {
+  fadeIn: `
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  `,
+  slideIn: `
+    0% { transform: translateX(-20px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+  `,
+  scaleIn: `
+    0% { transform: scale(0.95); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  `,
+  pulse: `
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.8; }
+  `,
+  wave: `
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(1.5); }
+  `
+};
+
+// Common styled component patterns
+const ClipPath = {
+  rectangle: 'polygon(0 0, calc(100% - 12px) 0, 100% 100%, 12px 100%)',
+  button: 'polygon(0 0, calc(100% - 8px) 0, 100% 100%, 8px 100%)',
+  card: 'polygon(0 0, calc(100% - 6px) 0, 100% 100%, 6px 100%)'
+};
+
 const VoiceUploadContainer = styled.div`
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(135deg, ${colors.lightGray} 0%, ${colors.white} 100%);
+  padding: 0;
+  margin: -20px;
+  animation: fadeIn 0.6s ease-out;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -100px;
+    right: -100px;
+    width: 200px;
+    height: 200px;
+    background: ${colors.lime};
+    opacity: 0.1;
+    border-radius: 50%;
+    animation: pulse 4s ease-in-out infinite;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -50px;
+    left: -50px;
+    width: 150px;
+    height: 150px;
+    background: ${colors.cyan};
+    opacity: 0.15;
+    transform: rotate(45deg);
+    animation: pulse 3s ease-in-out infinite reverse;
+  }
+  
+  @keyframes fadeIn {
+    ${animations.fadeIn}
+  }
+  
+  @keyframes pulse {
+    ${animations.pulse}
+  }
 `;
 
-const PageTitle = styled.h1`
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 20px;
-  color: #333333;
+const Header = styled.div`
+  background: linear-gradient(135deg, ${colors.darkGray} 0%, ${colors.magenta} 100%);
+  color: white;
+  padding: 60px 40px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  z-index: 2;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M30 0l30 30-30 30L0 30z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.3;
+  }
+  
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+    position: relative;
+    z-index: 2;
+    
+    @media (max-width: 768px) {
+      font-size: 2rem;
+    }
+  }
+  
+  .subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    position: relative;
+    z-index: 2;
+    
+    @media (max-width: 768px) {
+      font-size: 1rem;
+    }
+  }
+`;
+
+const ContentArea = styled.div`
+  flex: 1;
+  padding: 60px 40px;
+  position: relative;
+  z-index: 2;
+  
+  @media (max-width: 768px) {
+    padding: 40px 20px;
+  }
 `;
 
 const StepsContainer = styled.div`
   display: flex;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  overflow: hidden;
-  background-color: #FFFFFF;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  justify-content: center;
+  margin-bottom: 60px;
+  
+  @media (max-width: 768px) {
+    margin-bottom: 40px;
+  }
+`;
+
+const StepIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
 `;
 
 const Step = styled.div`
-  flex: 1;
-  padding: 15px;
-  background-color: ${({ active, completed }) => 
-    active 
-      ? '#1976D2' 
-      : completed 
-        ? '#E3F2FD' 
-        : '#FFFFFF'};
-  color: ${({ active }) => 
-    active ? 'white' : '#616161'};
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: relative;
-  border-right: 1px solid #E0E0E0;
   
-  &:last-child {
-    border-right: none;
-  }
-  
-  ${({ active, completed }) => 
-    (active || completed) && 
-    `
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 3px;
-      background-color: ${active ? '#1976D2' : '#BBDEFB'};
+  &:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 25px;
+    left: 100%;
+    width: 40px;
+    height: 3px;
+    background: ${({ completed }) => 
+      completed ? `linear-gradient(90deg, ${colors.magenta}, ${colors.cyan})` : colors.lightGray};
+    z-index: 1;
+    
+    @media (max-width: 768px) {
+      width: 20px;
     }
-  `}
+  }
 `;
 
 const StepNumber = styled.div`
-  display: inline-flex;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: ${({ active, completed }) => {
+    if (completed) return `linear-gradient(135deg, ${colors.lime}, ${colors.cyan})`;
+    if (active) return `linear-gradient(135deg, ${colors.magenta}, ${colors.cyan})`;
+    return colors.lightGray;
+  }};
+  color: white;
+  display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background-color: ${({ active, completed }) => 
-    active 
-      ? 'white' 
-      : completed 
-        ? '#1976D2' 
-        : '#E0E0E0'};
-  color: ${({ active, completed }) => 
-    active 
-      ? '#1976D2'
-      : completed 
-        ? 'white' 
-        : '#9E9E9E'};
-  font-size: 14px;
-  font-weight: 600;
-  margin-right: 8px;
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+  
+  ${({ active }) => active && `
+    animation: pulse 2s ease-in-out infinite;
+  `}
+  
+  @media (max-width: 768px) {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
 `;
 
 const StepTitle = styled.div`
-  display: inline-block;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
+  color: ${colors.darkGray};
+  text-align: center;
+  max-width: 100px;
+  
+  @media (max-width: 768px) {
+    font-size: 12px;
+    max-width: 80px;
+  }
 `;
 
-const RecordingCard = styled(Card)`
+const SectionCard = styled.div`
+  background: ${colors.white};
+  padding: 40px;
+  margin-bottom: 30px;
+  clip-path: ${ClipPath.rectangle};
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  position: relative;
+  animation: scaleIn 0.6s ease-out;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, ${colors.magenta}, ${colors.cyan}, ${colors.lime});
+  }
+  
+  @keyframes scaleIn {
+    ${animations.scaleIn}
+  }
+  
+  @media (max-width: 768px) {
+    padding: 30px 20px;
+  }
+`;
+
+const SectionTitle = styled.h2`
+  font-size: 1.8rem;
+  font-weight: 700;
   margin-bottom: 20px;
+  background: linear-gradient(135deg, ${colors.darkGray}, ${colors.magenta});
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  
+  svg {
+    color: ${colors.cyan};
+    font-size: 1.6rem;
+  }
+  
+  @media (max-width: 768px) {
+    font-size: 1.5rem;
+    
+    svg {
+      font-size: 1.3rem;
+    }
+  }
+`;
+
+const RecordingSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+`;
+
+const RecordingVisualization = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 60px;
+  margin: 20px 0;
+`;
+
+const WaveBar = styled.div`
+  width: 4px;
+  height: ${({ height }) => height || 20}px;
+  background: linear-gradient(180deg, ${colors.magenta}, ${colors.cyan});
+  border-radius: 2px;
+  animation: ${({ animate }) => animate ? 'wave 0.8s ease-in-out infinite' : 'none'};
+  animation-delay: ${({ delay }) => delay || '0s'};
+  
+  @keyframes wave {
+    ${animations.wave}
+  }
 `;
 
 const RecordingControls = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
 `;
 
-const RecordingTime = styled.div`
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 15px;
-  min-width: 70px;
-  text-align: center;
-`;
-
-const RecordingStatus = styled.div`
+const RecordButton = styled.button`
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: none;
+  background: ${({ recording }) => 
+    recording 
+      ? `linear-gradient(135deg, ${colors.magenta}, #FF6B6B)` 
+      : `linear-gradient(135deg, ${colors.cyan}, ${colors.lime})`};
+  color: white;
   display: flex;
   align-items: center;
-  margin-left: auto;
-`;
-
-const StatusIndicator = styled.div`
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: ${({ recording }) => 
-    recording ? '#F44336' : '#4CAF50'};
-  margin-right: 8px;
+  justify-content: center;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+  position: relative;
+  
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.3);
+  }
   
   ${({ recording }) => recording && `
-    animation: pulse 1.5s infinite;
+    animation: pulse 1.5s ease-in-out infinite;
     
-    @keyframes pulse {
-      0% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
-      }
-      
-      70% {
-        transform: scale(1);
-        box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
-      }
-      
-      100% {
-        transform: scale(0.95);
-        box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
-      }
+    &::after {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      border: 3px solid ${colors.magenta};
+      border-radius: 50%;
+      opacity: 0.6;
+      animation: pulse 1.5s ease-in-out infinite;
     }
   `}
 `;
 
-const StatusText = styled.div`
-  font-size: 14px;
-  color: #757575;
+const RecordingTime = styled.div`
+  font-size: 2rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, ${colors.darkGray}, ${colors.magenta});
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  min-width: 120px;
+  text-align: center;
 `;
 
-const AudioPreviewContainer = styled.div`
-  margin-top: 20px;
+const ActionButton = styled(Button)`
+  background: linear-gradient(135deg, ${({ variant }) => {
+    switch(variant) {
+      case 'danger': return `${colors.magenta}, #FF6B6B`;
+      case 'success': return `${colors.lime}, ${colors.cyan}`;
+      default: return `${colors.cyan}, ${colors.lime}`;
+    }
+  }}) !important;
+  border: none !important;
+  clip-path: ${ClipPath.button};
+  font-weight: 600 !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+  transition: all 0.3s ease !important;
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+  }
 `;
 
-const StyledAudio = styled.audio`
+const AudioPlayer = styled.div`
   width: 100%;
+  max-width: 500px;
+  margin: 30px auto;
+  padding: 25px;
+  background: linear-gradient(135deg, ${colors.lightGray}30, ${colors.white});
+  border-radius: 0;
+  clip-path: ${ClipPath.card};
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  
+  audio {
+    width: 100%;
+    height: 50px;
+    
+    &::-webkit-media-controls-panel {
+      background: linear-gradient(135deg, ${colors.cyan}20, ${colors.lime}20);
+    }
+  }
 `;
 
 const DividerOr = styled.div`
   position: relative;
   text-align: center;
-  margin: 20px 0;
+  margin: 50px 0;
   
   &::before {
     content: '';
@@ -199,229 +460,299 @@ const DividerOr = styled.div`
     top: 50%;
     left: 0;
     right: 0;
-    height: 1px;
-    background-color: #E0E0E0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, ${colors.lightGray}, transparent);
     z-index: 1;
   }
   
   span {
     position: relative;
     z-index: 2;
-    background-color: #F5F7F9;
-    padding: 0 15px;
-    color: #9E9E9E;
+    background: ${colors.white};
+    padding: 0 25px;
+    color: ${colors.darkGray};
+    font-weight: 600;
+    font-size: 18px;
   }
 `;
 
-const FileUploadContainer = styled.div`
+const FileUploadZone = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 30px;
-  border: 2px dashed #E0E0E0;
-  border-radius: 8px;
-  background-color: ${({ isDragging }) => 
-    isDragging ? '#E3F2FD' : 'transparent'};
-  transition: all 0.2s;
+  padding: 60px 40px;
+  border: 3px dashed ${({ isDragging }) => isDragging ? colors.cyan : colors.lightGray};
+  background: ${({ isDragging }) => 
+    isDragging ? `${colors.cyan}10` : `linear-gradient(135deg, ${colors.lightGray}20, ${colors.white})`};
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: ${({ isDragging }) => 
+      isDragging ? `radial-gradient(circle, ${colors.cyan}05, transparent)` : 'none'};
+    animation: ${({ isDragging }) => isDragging ? 'rotate 10s linear infinite' : 'none'};
+  }
   
   &:hover {
-    border-color: #1976D2;
+    border-color: ${colors.cyan};
+    background: ${colors.cyan}05;
+    transform: translateY(-2px);
+  }
+  
+  @keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 `;
 
-const FileUploadIcon = styled.div`
-  font-size: 40px;
-  color: #1976D2;
-  margin-bottom: 15px;
-`;
-
-const FileUploadText = styled.div`
-  font-size: 16px;
-  color: #424242;
-  margin-bottom: 10px;
-  text-align: center;
-`;
-
-const FileUploadSubtext = styled.div`
-  font-size: 14px;
-  color: #757575;
+const UploadIcon = styled.div`
+  font-size: 4rem;
+  background: linear-gradient(135deg, ${colors.cyan}, ${colors.lime});
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   margin-bottom: 20px;
-  text-align: center;
+  position: relative;
+  z-index: 2;
 `;
 
-const HiddenFileInput = styled.input`
-  display: none;
-`;
-
-const ProgressContainer = styled.div`
-  width: 100%;
-  margin-top: 20px;
-`;
-
-const ProgressBarContainer = styled.div`
-  width: 100%;
-  height: 10px;
-  background-color: #E0E0E0;
-  border-radius: 5px;
-  overflow: hidden;
+const UploadText = styled.div`
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: ${colors.darkGray};
   margin-bottom: 10px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
+`;
+
+const UploadSubtext = styled.div`
+  font-size: 1rem;
+  color: ${colors.darkGray};
+  opacity: 0.7;
+  margin-bottom: 30px;
+  text-align: center;
+  position: relative;
+  z-index: 2;
 `;
 
 const ProgressBar = styled.div`
-  height: 100%;
-  background-color: #1976D2;
-  width: ${({ progress }) => `${progress}%`};
-  transition: width 0.3s;
-`;
-
-const ProgressStatus = styled.div`
-  display: flex;
-  justify-content: space-between;
-  font-size: 14px;
-  color: #757575;
-`;
-
-// 처리 탭 컨테이너
-const ProcessingTabsContainer = styled.div`
-  margin-bottom: 20px;
-`;
-
-const TabsHeader = styled.div`
-  display: flex;
-  border-bottom: 1px solid #E0E0E0;
-  margin-bottom: 20px;
-`;
-
-const TabButton = styled.button`
-  padding: 10px 20px;
-  background: none;
-  border: none;
-  border-bottom: 3px solid ${({ active }) => active ? '#1976D2' : 'transparent'};
-  color: ${({ active }) => active ? '#1976D2' : '#757575'};
-  font-weight: ${({ active }) => active ? '600' : '400'};
-  cursor: pointer;
-  transition: all 0.3s;
-  font-size: 14px;
+  width: 100%;
+  height: 8px;
+  background: ${colors.lightGray};
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 20px 0;
+  position: relative;
   
-  &:hover {
-    color: #1976D2;
-    background-color: #F5F5F5;
-  }
-  
-  svg {
-    margin-right: 8px;
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: ${({ progress }) => `${progress}%`};
+    background: linear-gradient(90deg, ${colors.magenta}, ${colors.cyan}, ${colors.lime});
+    transition: width 0.3s ease;
+    border-radius: 4px;
   }
 `;
 
-const TabContent = styled.div`
+const TabsContainer = styled.div`
+  display: flex;
+  background: ${colors.white};
+  border-radius: 0;
+  clip-path: ${ClipPath.rectangle};
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  margin-bottom: 30px;
+  overflow: hidden;
+`;
+
+const Tab = styled.button`
+  flex: 1;
   padding: 20px;
-  background-color: #FFFFFF;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-`;
-
-const ProcessingCard = styled(Card)`
-  margin-bottom: 20px;
+  border: none;
+  background: ${({ active }) => 
+    active ? `linear-gradient(135deg, ${colors.magenta}, ${colors.cyan})` : colors.white};
+  color: ${({ active }) => active ? colors.white : colors.darkGray};
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  
+  &:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 20%;
+    bottom: 20%;
+    width: 1px;
+    background: ${colors.lightGray};
+  }
+  
+  &:hover:not(:disabled) {
+    background: ${({ active }) => 
+      active ? `linear-gradient(135deg, ${colors.magenta}, ${colors.cyan})` : colors.lightGray};
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const ProcessingStatus = styled.div`
   display: flex;
   align-items: center;
-  font-size: 16px;
-  color: #424242;
-  margin-bottom: 15px;
+  justify-content: center;
+  gap: 15px;
+  padding: 30px;
+  margin-bottom: 30px;
+  background: linear-gradient(135deg, ${colors.lightGray}30, ${colors.white});
+  border-radius: 0;
+  clip-path: ${ClipPath.card};
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: ${colors.darkGray};
   
   svg {
-    margin-right: 10px;
-    color: #1976D2;
+    font-size: 1.5rem;
+    color: ${colors.cyan};
     
     ${({ loading }) => loading && `
       animation: spin 1.5s linear infinite;
       
       @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
     `}
   }
 `;
 
-const ProcessingProgress = styled.div`
-  margin-top: 10px;
-`;
-
-const AnalysisControls = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 15px;
-`;
-
-const TranscriptionCard = styled(Card)`
+const ResultCard = styled.div`
+  background: ${colors.white};
+  padding: 30px;
   margin-bottom: 20px;
-`;
-
-const TranscriptionContainer = styled.div`
-  margin-top: 15px;
-`;
-
-const SpeakerText = styled.div`
-  margin-bottom: 15px;
-  padding-left: 10px;
-  border-left: 3px solid ${({ theme, speakerId }) => {
-    const colors = ['#1976D2', '#26A69A', '#4CAF50', '#FFC107', '#2196F3'];
-    return colors[parseInt(speakerId) % colors.length];
-  }};
-`;
-
-const SpeakerLabel = styled.div`
-  font-weight: 500;
-  margin-bottom: 5px;
-  display: flex;
-  align-items: center;
+  border-radius: 0;
+  clip-path: ${ClipPath.card};
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
   
-  svg {
-    margin-right: 5px;
+  h3 {
+    color: ${colors.darkGray};
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    
+    svg {
+      color: ${colors.cyan};
+    }
+  }
+  
+  .content {
+    background: #F8F9FA;
+    padding: 20px;
+    border-radius: 0;
+    clip-path: ${ClipPath.card};
+    line-height: 1.6;
+    color: ${colors.darkGray};
   }
 `;
 
-const TranslationOptions = styled.div`
+const TagsContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
   margin-top: 15px;
+`;
+
+const Tag = styled.div`
+  background: linear-gradient(135deg, ${colors.cyan}20, ${colors.lime}20);
+  color: ${colors.darkGray};
+  padding: 8px 16px;
+  border-radius: 0;
+  clip-path: ${ClipPath.card};
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid ${colors.cyan}30;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  
+  svg {
+    font-size: 12px;
+    color: ${colors.cyan};
+  }
+`;
+
+const LanguageGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
 `;
 
 const LanguageButton = styled.button`
+  padding: 15px 20px;
+  border: 2px solid ${({ selected }) => selected ? colors.cyan : colors.lightGray};
+  background: ${({ selected }) => 
+    selected ? `${colors.cyan}15` : colors.white};
+  color: ${colors.darkGray};
+  border-radius: 0;
+  clip-path: ${ClipPath.card};
+  cursor: pointer;
+  transition: all 0.3s ease;
   display: flex;
   align-items: center;
-  padding: 8px 16px;
-  background-color: ${({ selected }) => selected ? '#E3F2FD' : '#FFFFFF'};
-  border: 1px solid ${({ selected }) => selected ? '#1976D2' : '#E0E0E0'};
-  border-radius: 20px;
-  color: ${({ selected }) => selected ? '#1976D2' : '#616161'};
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
   
   &:hover {
-    background-color: #F5F5F5;
+    border-color: ${colors.cyan};
+    background: ${colors.cyan}10;
+    transform: translateY(-2px);
   }
   
-  svg {
-    margin-right: 8px;
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
   }
 `;
 
 const SaveNoteForm = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 25px;
+`;
+
+const FormGrid = styled.div`
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 25px;
+  
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const HiddenFileInput = styled.input`
+  display: none;
 `;
 
 const VoiceUpload = () => {
@@ -473,13 +804,23 @@ const VoiceUpload = () => {
   ];
   
   const languageOptions = [
-    { value: 'en', label: '영어', icon: <FaGlobe /> },
-    { value: 'ja', label: '일본어', icon: <FaGlobe /> },
-    { value: 'zh', label: '중국어', icon: <FaGlobe /> },
-    { value: 'es', label: '스페인어', icon: <FaGlobe /> },
-    { value: 'fr', label: '프랑스어', icon: <FaGlobe /> },
-    { value: 'de', label: '독일어', icon: <FaGlobe /> },
+    { value: 'en', label: '영어' },
+    { value: 'ja', label: '일본어' },
+    { value: 'zh', label: '중국어' },
+    { value: 'es', label: '스페인어' },
+    { value: 'fr', label: '프랑스어' },
+    { value: 'de', label: '독일어' },
   ];
+
+  // Wave bars for recording visualization
+  const waveBars = Array.from({ length: 20 }, (_, i) => (
+    <WaveBar
+      key={i}
+      height={isRecording ? Math.random() * 40 + 10 : 20}
+      animate={isRecording}
+      delay={`${i * 0.1}s`}
+    />
+  ));
   
   // 컴포넌트 마운트/언마운트 시 상태 초기화
   useEffect(() => {
@@ -493,19 +834,18 @@ const VoiceUpload = () => {
   
   // 트랜스크립션 결과가 있으면 노트 제목과 내용 설정
   useEffect(() => {
-  console.log('transcriptionResults 변경:', transcriptionResults);
-  if (transcriptionResults && transcriptionResults.text) {
-    const titleText = transcriptionResults.text.substring(0, 20) || '음성 녹음';
-    
-    setNoteData(prev => ({
-      ...prev,
-      title: `${titleText}${titleText.length >= 20 ? '...' : ''}`,
-      content: transcriptionResults.text || '',
-    }));
-    
-    setActiveStep(3);
-  }
-}, [transcriptionResults]);
+    if (transcriptionResults && transcriptionResults.text) {
+      const titleText = transcriptionResults.text.substring(0, 20) || '음성 녹음';
+      
+      setNoteData(prev => ({
+        ...prev,
+        title: `${titleText}${titleText.length >= 20 ? '...' : ''}`,
+        content: transcriptionResults.text || '',
+      }));
+      
+      setActiveStep(3);
+    }
+  }, [transcriptionResults]);
   
   // 메시지 알림 표시
   useEffect(() => {
@@ -515,7 +855,6 @@ const VoiceUpload = () => {
         type: 'success',
       }));
       
-      // 노트 저장 성공 시 노트 상세 페이지로 이동
       if (message.includes('저장되었습니다') && currentFile) {
         navigate(`/notes`);
       }
@@ -524,38 +863,32 @@ const VoiceUpload = () => {
   
   // 트랜스크립션 작업 상태를 주기적으로 확인
   useEffect(() => {
-  console.log('transcriptionJob 상태 변경:', transcriptionJob);
-  
-  if (transcriptionJob && transcriptionJob.status === 'IN_PROGRESS') {
-    if (!checkingStatus) {
-      console.log('주기적 상태 체크 시작');
-      setCheckingStatus(true);
-      
-      const interval = setInterval(() => {
-        console.log('상태 체크 실행:', transcriptionJob.id);
-        dispatch(checkTranscriptionStatus(transcriptionJob.id));
-      }, 3000); // 3초마다 확인으로 단축
-      
-      setStatusCheckInterval(interval);
+    if (transcriptionJob && transcriptionJob.status === 'IN_PROGRESS') {
+      if (!checkingStatus) {
+        setCheckingStatus(true);
+        
+        const interval = setInterval(() => {
+          dispatch(checkTranscriptionStatus(transcriptionJob.id));
+        }, 3000);
+        
+        setStatusCheckInterval(interval);
+      }
+    } else if (transcriptionJob && 
+               (transcriptionJob.status === 'COMPLETED' || 
+                transcriptionJob.status === 'FAILED')) {
+      setCheckingStatus(false);
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+        setStatusCheckInterval(null);
+      }
     }
-  } else if (transcriptionJob && 
-             (transcriptionJob.status === 'COMPLETED' || 
-              transcriptionJob.status === 'FAILED')) {
-    console.log('상태 체크 중단:', transcriptionJob.status);
-    setCheckingStatus(false);
-    if (statusCheckInterval) {
-      clearInterval(statusCheckInterval);
-      setStatusCheckInterval(null);
-    }
-  }
-  
-  // cleanup
-  return () => {
-    if (statusCheckInterval) {
-      clearInterval(statusCheckInterval);
-    }
-  };
-}, [transcriptionJob?.status, checkingStatus, dispatch]);
+    
+    return () => {
+      if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+      }
+    };
+  }, [transcriptionJob?.status, checkingStatus, dispatch]);
   
   const validateNoteForm = () => {
     const errors = {};
@@ -579,7 +912,6 @@ const VoiceUpload = () => {
       [name]: value,
     }));
     
-    // 입력 시 해당 필드의 에러 메시지 초기화
     if (noteErrors[name]) {
       setNoteErrors(prev => ({
         ...prev,
@@ -620,9 +952,6 @@ const VoiceUpload = () => {
       dispatch(uploadSpeechFile(formData))
         .then(() => {
           setActiveStep(2);
-        })
-        .catch(() => {
-          // 오류는 Redux에서 처리
         });
     }
   };
@@ -636,9 +965,6 @@ const VoiceUpload = () => {
       dispatch(uploadSpeechFile(formData))
         .then(() => {
           setActiveStep(2);
-        })
-        .catch(() => {
-          // 오류는 Redux에서 처리
         });
     }
   };
@@ -683,7 +1009,7 @@ const VoiceUpload = () => {
     switch (activeTab) {
       case 'transcribe':
         return (
-          <TabContent>
+          <div>
             <ProcessingStatus loading={transcriptionJob?.status === 'IN_PROGRESS'}>
               <FaSyncAlt />
               {transcriptionJob?.status === 'IN_PROGRESS' && '텍스트 변환 진행 중...'}
@@ -692,134 +1018,96 @@ const VoiceUpload = () => {
             </ProcessingStatus>
             
             {transcriptionJob?.status === 'IN_PROGRESS' && (
-              <ProcessingProgress>
-                <ProgressBarContainer>
-                  <ProgressBar progress={transcriptionJob.progress || 0} />
-                </ProgressBarContainer>
-                <ProgressStatus>
-                  <div>처리 중...</div>
-                  <div>{transcriptionJob.progress || 0}%</div>
-                </ProgressStatus>
-              </ProcessingProgress>
+              <ProgressBar progress={transcriptionJob.progress || 0} />
             )}
             
             {transcriptionResults && (
-              <TranscriptionContainer>
-                {transcriptionResults.speakers && transcriptionResults.speakers.length > 0 ? (
-                  transcriptionResults.speakers.map((speaker, index) => (
-                    <SpeakerText key={index} speakerId={speaker.id}>
-                      <SpeakerLabel>
-                        <FaMicrophone /> 화자 {speaker.id}
-                      </SpeakerLabel>
-                      {speaker.text}
-                    </SpeakerText>
-                  ))
-                ) : (
-                  <div>{transcriptionResults.text}</div>
-                )}
-              </TranscriptionContainer>
+              <ResultCard>
+                <h3><FaFileAlt /> 변환 결과</h3>
+                <div className="content">
+                  {transcriptionResults.speakers && transcriptionResults.speakers.length > 0 ? (
+                    transcriptionResults.speakers.map((speaker, index) => (
+                      <div key={index} style={{ marginBottom: '15px' }}>
+                        <strong>화자 {speaker.id}:</strong> {speaker.text}
+                      </div>
+                    ))
+                  ) : (
+                    transcriptionResults.text
+                  )}
+                </div>
+              </ResultCard>
             )}
             
             {transcriptionJob?.status === 'FAILED' && (
               <Alert
                 variant="error"
                 message="음성 변환 중 오류가 발생했습니다. 다른 파일을 시도해보세요."
-                marginTop="15px"
               />
             )}
-            
-            {transcriptionJob?.status === 'COMPLETED' && !transcriptionResults && (
-              <Alert
-                variant="info"
-                message="변환 결과를 불러오는 중입니다..."
-                marginTop="15px"
-              />
-            )}
-          </TabContent>
+          </div>
         );
       
       case 'analyze':
         return (
-          <TabContent>
+          <div>
             <ProcessingStatus>
               <FaListAlt />
               요약 및 핵심 개념 추출
             </ProcessingStatus>
             
-            <Button
-              variant="outline"
-              onClick={handleAnalyzeText}
-              disabled={loading || !transcriptionResults}
-              icon={<FaListAlt />}
-            >
-              {loading ? '분석 중...' : '텍스트 분석하기'}
-            </Button>
+            <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+              <ActionButton
+                onClick={handleAnalyzeText}
+                disabled={loading || !transcriptionResults}
+                icon={<FaListAlt />}
+              >
+                {loading ? '분석 중...' : '텍스트 분석하기'}
+              </ActionButton>
+            </div>
             
             {analysisResults.summary && (
-              <div style={{ marginTop: '20px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: '500', marginBottom: '10px' }}>요약</h3>
-                <div style={{ 
-                  padding: '15px', 
-                  backgroundColor: '#F5F7F9', 
-                  borderRadius: '8px',
-                  marginBottom: '20px'
-                }}>
+              <ResultCard>
+                <h3><FaFileAlt /> 요약</h3>
+                <div className="content">
                   {analysisResults.summary}
                 </div>
-              </div>
+              </ResultCard>
             )}
             
             {analysisResults.keyPhrases && analysisResults.keyPhrases.length > 0 && (
-              <div>
-                <h3 style={{ fontSize: '16px', fontWeight: '500', marginBottom: '10px' }}>핵심 개념</h3>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              <ResultCard>
+                <h3><FaFileAlt /> 핵심 개념</h3>
+                <TagsContainer>
                   {analysisResults.keyPhrases.map((phrase, index) => (
-                    <div 
-                      key={index}
-                      style={{
-                        backgroundColor: '#E3F2FD',
-                        color: '#1976D2',
-                        padding: '5px 10px',
-                        borderRadius: '20px',
-                        fontSize: '14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <FaFileAlt style={{ marginRight: '5px', fontSize: '12px' }} />
+                    <Tag key={index}>
+                      <FaFileAlt />
                       {phrase}
-                    </div>
+                    </Tag>
                   ))}
-                </div>
-              </div>
-            )}
-            
-            {!analysisResults.summary && !analysisResults.keyPhrases?.length && !loading && (
-              <div style={{ marginTop: '20px', textAlign: 'center', color: '#757575' }}>
-                텍스트 분석을 시작하려면 '텍스트 분석하기' 버튼을 클릭하세요.
-              </div>
+                </TagsContainer>
+              </ResultCard>
             )}
             
             {loading && (
-              <div style={{ marginTop: '20px', textAlign: 'center' }}>
+              <div style={{ textAlign: 'center', padding: '40px' }}>
                 <Spinner size="40px" />
-                <div style={{ marginTop: '10px', color: '#757575' }}>텍스트 분석 중...</div>
+                <div style={{ marginTop: '20px', color: colors.darkGray }}>텍스트 분석 중...</div>
               </div>
             )}
-          </TabContent>
+          </div>
         );
       
       case 'translate':
         return (
-          <TabContent>
+          <div>
             <ProcessingStatus>
               <FaLanguage />
               다른 언어로 번역하기
             </ProcessingStatus>
             
-            <div style={{ marginBottom: '20px' }}>
-              <h3 style={{ fontSize: '16px', fontWeight: '500', marginBottom: '10px' }}>번역할 언어 선택</h3>
-              <TranslationOptions>
+            <div style={{ marginBottom: '30px' }}>
+              <h3 style={{ marginBottom: '20px', color: colors.darkGray }}>번역할 언어 선택</h3>
+              <LanguageGrid>
                 {languageOptions.map(option => (
                   <LanguageButton
                     key={option.value}
@@ -827,40 +1115,27 @@ const VoiceUpload = () => {
                     selected={selectedLanguage === option.value}
                     disabled={loading}
                   >
-                    {option.icon} {option.label}
+                    <FaGlobe /> {option.label}
                   </LanguageButton>
                 ))}
-              </TranslationOptions>
+              </LanguageGrid>
             </div>
             
             {Object.keys(translationResults).map(lang => (
-              <div key={lang} style={{ marginTop: '20px' }}>
-                <h3 style={{ 
-                  fontSize: '16px', 
-                  fontWeight: '500', 
-                  marginBottom: '10px',
-                  display: 'flex',
-                  alignItems: 'center' 
-                }}>
-                  <FaGlobe style={{ marginRight: '8px' }} />
+              <ResultCard key={lang}>
+                <h3>
+                  <FaGlobe />
                   {languageOptions.find(opt => opt.value === lang)?.label || lang} 번역 결과
                 </h3>
-                <div style={{ 
-                  padding: '15px', 
-                  backgroundColor: '#F5F7F9', 
-                  borderRadius: '8px',
-                  position: 'relative'
-                }}>
+                <div className="content" style={{ position: 'relative' }}>
                   {translationResults[lang]}
-                  <Button
-                    variant="text"
-                    size="small"
+                  <ActionButton
                     style={{ 
                       position: 'absolute', 
-                      top: '5px', 
-                      right: '5px',
-                      padding: '5px',
-                      minWidth: 'unset'
+                      top: '10px', 
+                      right: '10px',
+                      padding: '8px 12px',
+                      fontSize: '12px'
                     }}
                     onClick={() => {
                       navigator.clipboard.writeText(translationResults[lang]);
@@ -870,25 +1145,20 @@ const VoiceUpload = () => {
                       }));
                     }}
                     icon={<FaCopy />}
-                    title="클립보드에 복사"
-                  />
+                  >
+                    복사
+                  </ActionButton>
                 </div>
-              </div>
+              </ResultCard>
             ))}
             
-            {!Object.keys(translationResults).length && !loading && (
-              <div style={{ marginTop: '20px', textAlign: 'center', color: '#757575' }}>
-                번역할 언어를 선택하세요.
-              </div>
-            )}
-            
             {loading && (
-              <div style={{ marginTop: '20px', textAlign: 'center' }}>
+              <div style={{ textAlign: 'center', padding: '40px' }}>
                 <Spinner size="40px" />
-                <div style={{ marginTop: '10px', color: '#757575' }}>번역 중...</div>
+                <div style={{ marginTop: '20px', color: colors.darkGray }}>번역 중...</div>
               </div>
             )}
-          </TabContent>
+          </div>
         );
       
       default:
@@ -898,309 +1168,332 @@ const VoiceUpload = () => {
   
   return (
     <VoiceUploadContainer>
-      <PageTitle>음성 업로드</PageTitle>
+      <Header>
+        <h1>🎤 AI 음성 노트</h1>
+        <div className="subtitle">
+          음성을 텍스트로 변환하고 AI가 분석해드립니다
+        </div>
+      </Header>
       
-      {error && (
-        <Alert
-          variant="error"
-          message={error}
-          marginBottom="20px"
-        />
-      )}
-      
-      {recorderError && (
-        <Alert
-          variant="warning"
-          message={recorderError}
-          marginBottom="20px"
-        />
-      )}
-      
-      <StepsContainer>
-        <Step active={activeStep === 1} completed={activeStep > 1}>
-          <StepNumber active={activeStep === 1} completed={activeStep > 1}>1</StepNumber>
-          <StepTitle>녹음 또는 업로드</StepTitle>
-        </Step>
-        <Step active={activeStep === 2} completed={activeStep > 2}>
-          <StepNumber active={activeStep === 2} completed={activeStep > 2}>2</StepNumber>
-          <StepTitle>텍스트 처리</StepTitle>
-        </Step>
-        <Step active={activeStep === 3}>
-          <StepNumber active={activeStep === 3}>3</StepNumber>
-          <StepTitle>노트 저장</StepTitle>
-        </Step>
-      </StepsContainer>
-      
-      {activeStep === 1 && (
-        <>
-          <RecordingCard title="음성 녹음">
-            <RecordingControls>
-              {!isRecording && !audioUrl && (
-                <Button
-                  onClick={startRecording}
-                  icon={<FaMicrophone />}
-                  disabled={loading}
-                >
-                  녹음 시작
-                </Button>
-              )}
+      <ContentArea>
+        {error && (
+          <Alert
+            variant="error"
+            message={error}
+            marginBottom="20px"
+          />
+        )}
+        
+        {recorderError && (
+          <Alert
+            variant="warning"
+            message={recorderError}
+            marginBottom="20px"
+          />
+        )}
+        
+        <StepsContainer>
+          <StepIndicator>
+            <Step completed={activeStep > 1}>
+              <StepNumber active={activeStep === 1} completed={activeStep > 1}>
+                {activeStep > 1 ? <FaCheck /> : '1'}
+              </StepNumber>
+              <StepTitle>녹음 또는 업로드</StepTitle>
+            </Step>
+            <Step completed={activeStep > 2}>
+              <StepNumber active={activeStep === 2} completed={activeStep > 2}>
+                {activeStep > 2 ? <FaCheck /> : '2'}
+              </StepNumber>
+              <StepTitle>AI 처리</StepTitle>
+            </Step>
+            <Step>
+              <StepNumber active={activeStep === 3}>
+                {activeStep === 3 ? <FaCheck /> : '3'}
+              </StepNumber>
+              <StepTitle>노트 저장</StepTitle>
+            </Step>
+          </StepIndicator>
+        </StepsContainer>
+        
+        {activeStep === 1 && (
+          <>
+            <SectionCard>
+              <SectionTitle>
+                <FaMicrophone />
+                음성 녹음
+              </SectionTitle>
               
-              {isRecording && (
-                <>
-                  <Button
-                    onClick={stopRecording}
-                    variant="outline"
-                    icon={<FaStop />}
-                  >
-                    녹음 중지
-                  </Button>
-                  <Button
-                    onClick={cancelRecording}
-                    variant="outline"
-                    color="danger"
-                    icon={<FaTrash />}
-                  >
-                    취소
-                  </Button>
-                </>
-              )}
-              
-              {audioUrl && (
-                <>
-                  <Button
-                    onClick={handleRecordingUpload}
-                    icon={<FaUpload />}
-                    disabled={loading}
-                  >
-                    {loading ? '업로드 중...' : '녹음 업로드'}
-                  </Button>
-                  <Button
-                    onClick={resetRecording}
-                    variant="outline"
-                    color="danger"
-                    icon={<FaTrash />}
-                    disabled={loading}
-                  >
-                    녹음 삭제
-                  </Button>
-                </>
-              )}
-              
-              <RecordingTime>
-                {secondsToTimeFormat(recordingTime)}
-              </RecordingTime>
-              
-              <RecordingStatus>
-                <StatusIndicator recording={isRecording} />
-                <StatusText>
-                  {isRecording ? '녹음 중...' : '녹음 대기 중'}
-                </StatusText>
-              </RecordingStatus>
-            </RecordingControls>
+              <RecordingSection>
+                <RecordingVisualization>
+                  {waveBars}
+                </RecordingVisualization>
+                
+                <RecordingControls>
+                  {!isRecording && !audioUrl && (
+                    <ActionButton
+                      onClick={startRecording}
+                      icon={<FaMicrophone />}
+                      disabled={loading}
+                    >
+                      녹음 시작
+                    </ActionButton>
+                  )}
+                  
+                  {isRecording && (
+                    <>
+                      <RecordButton
+                        recording={isRecording}
+                        onClick={stopRecording}
+                      >
+                        <FaStop />
+                      </RecordButton>
+                      <ActionButton
+                        variant="danger"
+                        onClick={cancelRecording}
+                        icon={<FaTrash />}
+                      >
+                        취소
+                      </ActionButton>
+                    </>
+                  )}
+                  
+                  <RecordingTime>
+                    {secondsToTimeFormat(recordingTime)}
+                  </RecordingTime>
+                  
+                  {audioUrl && (
+                    <>
+                      <ActionButton
+                        onClick={handleRecordingUpload}
+                        icon={<FaUpload />}
+                        disabled={loading}
+                      >
+                        {loading ? '업로드 중...' : '녹음 업로드'}
+                      </ActionButton>
+                      <ActionButton
+                        variant="danger"
+                        onClick={resetRecording}
+                        icon={<FaTrash />}
+                        disabled={loading}
+                      >
+                        삭제
+                      </ActionButton>
+                    </>
+                  )}
+                </RecordingControls>
+                
+                {audioUrl && (
+                  <AudioPlayer>
+                    <audio controls>
+                      <source src={audioUrl} type="audio/wav" />
+                      브라우저가 오디오 재생을 지원하지 않습니다.
+                    </audio>
+                  </AudioPlayer>
+                )}
+              </RecordingSection>
+            </SectionCard>
             
-            {audioUrl && (
-              <AudioPreviewContainer>
-                <StyledAudio controls>
-                  <source src={audioUrl} type="audio/wav" />
-                  브라우저가 오디오 재생을 지원하지 않습니다.
-                </StyledAudio>
-              </AudioPreviewContainer>
-            )}
-          </RecordingCard>
-          
-          <DividerOr>
-            <span>또는</span>
-          </DividerOr>
-          
-          <RecordingCard title="파일 업로드">
-            <FileUploadContainer
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              isDragging={isDragging}
-            >
-              <FileUploadIcon>
+            <DividerOr>
+              <span>또는</span>
+            </DividerOr>
+            
+            <SectionCard>
+              <SectionTitle>
                 <FaUpload />
-              </FileUploadIcon>
-              <FileUploadText>
-                음성 파일을 클릭하거나 이곳에 끌어다 놓으세요
-              </FileUploadText>
-              <FileUploadSubtext>
-                지원 형식: .mp3, .wav, .m4a (최대 100MB)
-              </FileUploadSubtext>
-              <Button
-                as="label"
-                htmlFor="file-upload"
-                variant="outline"
-                icon={<FaUpload />}
-                disabled={loading}
+                파일 업로드
+              </SectionTitle>
+              
+              <FileUploadZone
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('file-upload').click()}
+                isDragging={isDragging}
               >
-                파일 선택
-              </Button>
-              <HiddenFileInput
-                id="file-upload"
-                type="file"
-                accept=".mp3,.wav,.m4a"
-                onChange={handleFileChange}
-                disabled={loading}
-              />
-            </FileUploadContainer>
-            
-            {selectedFile && (
-              <div style={{ marginTop: '20px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <div>
-                    <strong>선택된 파일:</strong> {selectedFile.name}
-                  </div>
-                  <div>
-                    <strong>크기:</strong> {fileSize(selectedFile.size)}
-                  </div>
-                </div>
-                <Button
-                  onClick={handleFileUpload}
-                  fullWidth
+                <UploadIcon>
+                  <FaUpload />
+                </UploadIcon>
+                <UploadText>
+                  음성 파일을 클릭하거나 드래그해서 업로드하세요
+                </UploadText>
+                <UploadSubtext>
+                  지원 형식: .mp3, .wav, .m4a (최대 100MB)
+                </UploadSubtext>
+                <ActionButton
+                  as="label"
+                  htmlFor="file-upload"
                   icon={<FaUpload />}
                   disabled={loading}
+                  style={{ pointerEvents: 'none' }}
                 >
-                  {loading ? '업로드 중...' : '파일 업로드'}
-                </Button>
-                
-                {loading && (
-                  <ProgressContainer>
-                    <ProgressBarContainer>
-                      <ProgressBar progress={fileUploadProgress} />
-                    </ProgressBarContainer>
-                    <ProgressStatus>
-                      <div>업로드 중...</div>
-                      <div>{fileUploadProgress}%</div>
-                    </ProgressStatus>
-                  </ProgressContainer>
-                )}
-              </div>
-            )}
-          </RecordingCard>
-        </>
-      )}
-      
-      {activeStep === 2 && transcriptionJob && (
-        <ProcessingTabsContainer>
-          <TabsHeader>
-            <TabButton 
-              active={activeTab === 'transcribe'} 
-              onClick={() => setActiveTab('transcribe')}
-            >
-              <FaFileAudio /> 텍스트 변환
-            </TabButton>
-            <TabButton 
-              active={activeTab === 'analyze'}
-              onClick={() => setActiveTab('analyze')}
-              disabled={!transcriptionResults}
-            >
-              <FaListAlt /> 요약 및 핵심 개념
-            </TabButton>
-            <TabButton 
-              active={activeTab === 'translate'}
-              onClick={() => setActiveTab('translate')}
-              disabled={!transcriptionResults}
-            >
-              <FaLanguage /> 번역
-            </TabButton>
-          </TabsHeader>
-          
-          {renderTabContent()}
-          
-          {transcriptionJob.status === 'COMPLETED' && transcriptionResults && (
-            <div style={{ textAlign: 'center', marginTop: '20px' }}>
-              <Button
-                onClick={() => setActiveStep(3)}
-                icon={<FaFileAlt />}
-              >
-                노트 작성으로 진행
-              </Button>
-            </div>
-          )}
-        </ProcessingTabsContainer>
-      )}
-      
-      {activeStep === 3 && transcriptionResults && (
-        <Card title="노트 저장">
-          <SaveNoteForm onSubmit={handleSaveNote}>
-            <Input
-              name="title"
-              label="제목"
-              placeholder="노트 제목을 입력하세요"
-              value={noteData.title}
-              onChange={handleNoteChange}
-              error={noteErrors.title}
-              disabled={loading}
-              required
-            />
-            
-            <TextArea
-              name="content"
-              label="내용"
-              placeholder="노트 내용을 입력하세요"
-              value={noteData.content}
-              onChange={handleNoteChange}
-              error={noteErrors.content}
-              disabled={loading}
-              minHeight="200px"
-              required
-            />
-            
-            <Select
-              name="category"
-              label="카테고리"
-              value={noteData.category}
-              onChange={handleNoteChange}
-              options={categories}
-              disabled={loading}
-            />
-            
-            {analysisResults.keyPhrases && analysisResults.keyPhrases.length > 0 && (
-              <div>
-                <label 
-                  style={{ 
-                    display: 'block', 
-                    marginBottom: '6px', 
-                    fontSize: '14px', 
-                    fontWeight: 500 
-                  }}
-                >
-                  태그
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                  {analysisResults.keyPhrases.map((phrase, index) => (
-                    <div 
-                      key={index}
-                      style={{
-                        backgroundColor: '#E3F2FD',
-                        color: '#1976D2',
-                        padding: '5px 10px',
-                        borderRadius: '20px',
-                        fontSize: '14px',
-                        display: 'flex',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <FaFileAlt style={{ marginRight: '5px', fontSize: '12px' }} />
-                      {phrase}
+                  파일 선택
+                </ActionButton>
+                <HiddenFileInput
+                  id="file-upload"
+                  type="file"
+                  accept=".mp3,.wav,.m4a"
+                  onChange={handleFileChange}
+                  disabled={loading}
+                />
+              </FileUploadZone>
+              
+              {selectedFile && (
+                <div style={{ marginTop: '30px', textAlign: 'center' }}>
+                  <div style={{ 
+                    marginBottom: '20px', 
+                    padding: '20px',
+                    background: colors.lightGray + '30',
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>
+                      선택된 파일: {selectedFile.name}
                     </div>
-                  ))}
+                    <div style={{ color: colors.darkGray, opacity: 0.8 }}>
+                      크기: {fileSize(selectedFile.size)}
+                    </div>
+                  </div>
+                  
+                  {loading && (
+                    <ProgressBar progress={fileUploadProgress} />
+                  )}
+                  
+                  <ActionButton
+                    onClick={handleFileUpload}
+                    icon={<FaUpload />}
+                    disabled={loading}
+                    style={{ width: '200px' }}
+                  >
+                    {loading ? `업로드 중... ${fileUploadProgress}%` : '파일 업로드'}
+                  </ActionButton>
                 </div>
+              )}
+            </SectionCard>
+          </>
+        )}
+        
+        {activeStep === 2 && transcriptionJob && (
+          <SectionCard>
+            <TabsContainer>
+              <Tab 
+                active={activeTab === 'transcribe'} 
+                onClick={() => setActiveTab('transcribe')}
+              >
+                <FaFileAudio /> 텍스트 변환
+              </Tab>
+              <Tab 
+                active={activeTab === 'analyze'}
+                onClick={() => setActiveTab('analyze')}
+                disabled={!transcriptionResults}
+              >
+                <FaListAlt /> 분석
+              </Tab>
+              <Tab 
+                active={activeTab === 'translate'}
+                onClick={() => setActiveTab('translate')}
+                disabled={!transcriptionResults}
+              >
+                <FaLanguage /> 번역
+              </Tab>
+            </TabsContainer>
+            
+            {renderTabContent()}
+            
+            {transcriptionJob.status === 'COMPLETED' && transcriptionResults && (
+              <div style={{ textAlign: 'center', marginTop: '40px' }}>
+                <ActionButton
+                  onClick={() => setActiveStep(3)}
+                  icon={<FaArrowRight />}
+                  style={{ padding: '15px 30px', fontSize: '16px' }}
+                >
+                  노트 작성으로 진행
+                </ActionButton>
               </div>
             )}
+          </SectionCard>
+        )}
+        
+        {activeStep === 3 && transcriptionResults && (
+          <SectionCard>
+            <SectionTitle>
+              <FaSave />
+              노트 저장
+            </SectionTitle>
             
-            <Button
-              type="submit"
-              icon={<FaSave />}
-              disabled={loading}
-            >
-              {loading ? '저장 중...' : '노트 저장'}
-            </Button>
-          </SaveNoteForm>
-        </Card>
-      )}
+            <SaveNoteForm onSubmit={handleSaveNote}>
+              <FormGrid>
+                <div>
+                  <Input
+                    name="title"
+                    label="제목"
+                    placeholder="노트 제목을 입력하세요"
+                    value={noteData.title}
+                    onChange={handleNoteChange}
+                    error={noteErrors.title}
+                    disabled={loading}
+                    required
+                  />
+                  
+                  <TextArea
+                    name="content"
+                    label="내용"
+                    placeholder="노트 내용을 입력하세요"
+                    value={noteData.content}
+                    onChange={handleNoteChange}
+                    error={noteErrors.content}
+                    disabled={loading}
+                    minHeight="300px"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Select
+                    name="category"
+                    label="카테고리"
+                    value={noteData.category}
+                    onChange={handleNoteChange}
+                    options={categories}
+                    disabled={loading}
+                  />
+                  
+                  {analysisResults.keyPhrases && analysisResults.keyPhrases.length > 0 && (
+                    <div style={{ marginTop: '20px' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '10px', 
+                        fontSize: '14px', 
+                        fontWeight: 500,
+                        color: colors.darkGray
+                      }}>
+                        자동 생성된 태그
+                      </label>
+                      <TagsContainer>
+                        {analysisResults.keyPhrases.map((phrase, index) => (
+                          <Tag key={index}>
+                            <FaFileAlt />
+                            {phrase}
+                          </Tag>
+                        ))}
+                      </TagsContainer>
+                    </div>
+                  )}
+                </div>
+              </FormGrid>
+              
+              <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                <ActionButton
+                  type="submit"
+                  icon={<FaSave />}
+                  disabled={loading}
+                  style={{ padding: '15px 40px', fontSize: '16px' }}
+                >
+                  {loading ? '저장 중...' : '노트 저장하기'}
+                </ActionButton>
+              </div>
+            </SaveNoteForm>
+          </SectionCard>
+        )}
+      </ContentArea>
     </VoiceUploadContainer>
   );
 };

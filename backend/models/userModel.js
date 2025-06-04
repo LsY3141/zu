@@ -131,6 +131,29 @@ const updateUsageStats = async (id, statsData) => {
   }
 };
 
+const getUserStats = async (userId) => {
+  const sql = `
+    SELECT 
+      u.total_notes,
+      u.speech_processing_minutes,
+      u.created_at,
+      COUNT(n.id) as current_notes_count,
+      COUNT(CASE WHEN n.is_voice = 1 THEN 1 END) as voice_notes_count,
+      COUNT(CASE WHEN n.is_voice = 0 THEN 1 END) as text_notes_count
+    FROM users u
+    LEFT JOIN notes n ON u.id = n.user_id AND n.is_deleted = 0
+    WHERE u.id = ?
+    GROUP BY u.id
+  `;
+  
+  try {
+    const result = await db.query(sql, [userId]);
+    return result[0] || {};
+  } catch (error) {
+    throw error;
+  }
+};
+
 const createPasswordResetToken = async (userId, token, expiresAt) => {
   const sql = `
     INSERT INTO password_reset_tokens (user_id, token, expires_at)
@@ -182,6 +205,7 @@ module.exports = {
   updateProfile,
   updatePassword,
   updateUsageStats,
+  getUserStats,
   createPasswordResetToken,
   verifyPasswordResetToken,
   deletePasswordResetToken
