@@ -1,0 +1,45 @@
+{
+"home": {
+"title": "AI Learning Support System",
+"welcome": "Hello, {{username}}!",
+"subtitle": "Experience more efficient learning with our AI-powered smart note system",
+"createTextNote": "Create New Note",
+"createVoiceNote": "Record Voice Note",
+"features": {
+    "title": "Key Features",
+    "smartText": {
+    "title": "Smart Text Notes",
+    "description": "AI-powered automatic organization and tag generation for more systematic note management."
+    },
+    "voiceNote": {
+    "title": "Voice Notes & Real-time Conversion",
+    "description": "Revolutionary features that automatically convert speech to text and support multilingual translation."
+    },
+    "analysis": {
+    "title": "Learning Analytics & Insights",
+    "description": "Provides efficient learning experiences through learning pattern analysis and personalized recommendations."
+    }
+},
+"recentNotes": {
+    "title": "Recent Notes",
+    "viewAll": "View All",
+    "empty": {
+    "title": "Create your first note!",
+    "description": "Start a new learning experience with smart note-taking powered by AI.",
+    "createText": "Create Text Note",
+    "createVoice": "Record Voice Note"
+    }
+},
+"cta": {
+    "title": "What should we add next? We'd love your suggestions.",
+    "description": "Feel free to share your ideas with us"
+},
+"noteTypes": {
+    "voice": "Voice",
+    "text": "Text"
+},
+"buttons": {
+    "start": "Get Started"
+}
+}
+}

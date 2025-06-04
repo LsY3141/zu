@@ -1,3 +1,6 @@
+// i18n 설정을 가장 먼저 import (다른 import보다 먼저!)
+import './i18n';
+
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useDispatch } from 'react-redux';

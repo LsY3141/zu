@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const { testConnection } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes'); // 새로 추가
 const speechRoutes = require('./routes/speechRoutes');
 const noteRoutes = require('./routes/noteRoutes');
 const chatRoutes = require('./routes/chatRoutes'); // 새로 추가
@@ -41,8 +42,10 @@ app.use((req, res, next) => {
 
 // 라우트
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes); // 사용자 라우트 추가
 app.use('/api/speech', speechRoutes);
 app.use('/api/notes', noteRoutes);
+app.use('/api/chat', chatRoutes); // 채팅 라우트 추가
 
 // 기본 라우트
 app.get('/', (req, res) => {
@@ -57,9 +60,11 @@ app.get('/api/status', (req, res) => {
     timestamp: new Date().toISOString(),
     env: process.env.NODE_ENV || 'development',
     features: {
+      auth: true,
+      users: true, // 사용자 기능 추가
       notes: true,
       speech: true,
-      chatbot: true // ChatBot 기능 활성화 표시
+      chatbot: true
     }
   });
 });
@@ -104,6 +109,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, () => {
   console.log(`서버 실행 중: http://localhost:${PORT}`);
+  console.log('사용자 API 엔드포인트: /api/users');
   console.log('ChatBot API 엔드포인트: /api/chat');
 });
 

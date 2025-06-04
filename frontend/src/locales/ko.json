@@ -1,0 +1,45 @@
+{
+"home": {
+"title": "AI 학습 지원 시스템",
+"welcome": "안녕하세요, {{username}}님!",
+"subtitle": "AI 기반 스마트 노트 시스템으로 더 효율적인 학습을 경험하세요",
+"createTextNote": "새 노트 작성",
+"createVoiceNote": "음성 노트 녹음",
+"features": {
+    "title": "주요 기능",
+    "smartText": {
+    "title": "스마트 텍스트 노트",
+    "description": "AI 기반 자동 정리 및 태그 생성으로 더욱 체계적인 노트 관리가 가능합니다."
+    },
+    "voiceNote": {
+    "title": "음성 노트 & 실시간 변환", 
+    "description": "음성을 텍스트로 자동 변환하고 다국어 번역까지 지원하는 혁신적인 기능입니다."
+    },
+    "analysis": {
+    "title": "학습 분석 & 인사이트",
+    "description": "학습 패턴 분석과 개인화된 추천으로 효율적인 학습 경험을 제공합니다."
+    }
+},
+"recentNotes": {
+    "title": "최근 노트",
+    "viewAll": "모두 보기",
+    "empty": {
+    "title": "첫 번째 노트를 만들어보세요!",
+    "description": "AI가 도와주는 스마트한 노트 작성으로 학습의 새로운 경험을 시작하세요.",
+    "createText": "텍스트 노트 작성",
+    "createVoice": "음성 노트 녹음"
+    }
+},
+"cta": {
+    "title": "어떤 걸 추가해야할까. 추천받습니다.",
+    "description": "자유롭게 의견을 공유해주세요요"
+},
+"noteTypes": {
+    "voice": "음성",
+    "text": "텍스트"
+},
+"buttons": {
+    "start": "시작하기"
+}
+}
+}

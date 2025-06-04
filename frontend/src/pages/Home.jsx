@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next'; // 번역 훅 추가
 import styled from 'styled-components';
 import { Container } from 'react-bootstrap';
 import { 
@@ -26,32 +27,7 @@ const colors = {
   white: '#FFFFFF'
 };
 
-// Features data
-const features = [
-  {
-    icon: FaPen,
-    color: colors.magenta,
-    title: '스마트 텍스트 노트',
-    description: 'AI 기반 자동 정리 및 태그 생성으로 더욱 체계적인 노트 관리가 가능합니다.',
-    route: '/notes/create'
-  },
-  {
-    icon: FaMicrophone,
-    color: colors.cyan,
-    title: '음성 노트 & 실시간 변환',
-    description: '음성을 텍스트로 자동 변환하고 다국어 번역까지 지원하는 혁신적인 기능입니다.',
-    route: '/voice'
-  },
-  {
-    icon: FaChartLine,
-    color: colors.lime,
-    title: '학습 분석 & 인사이트',
-    description: '학습 패턴 분석과 개인화된 추천으로 효율적인 학습 경험을 제공합니다.',
-    route: '/profile'
-  }
-];
-
-// Styled Components
+// Styled Components (기존과 동일)
 const HomeContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -214,9 +190,12 @@ const NoteContent = styled.div`
 
 const NoteFooter = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 0.8rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid ${colors.lightGray};
+  font-size: 12px;
   color: #999;
 `;
 
@@ -310,6 +289,7 @@ const GeometricButton = styled(Button)`
 
 // Main Component
 const Home = () => {
+  const { t } = useTranslation(); // 번역 함수
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { user } = useSelector(state => state.auth);
@@ -335,21 +315,21 @@ const Home = () => {
         <HeroSection>
           <div style={{ position: 'relative', zIndex: 2 }}>
             <h1 style={{ fontSize: '2.5rem', fontWeight: 700, marginBottom: '1rem' }}>
-              안녕하세요, {user?.username || '사용자'}님!
+              {t('home.welcome', { username: user?.username || '사용자' })}
             </h1>
             <p style={{ fontSize: '1.2rem', marginBottom: '2rem', opacity: 0.9 }}>
-              AI 기반 스마트 노트 시스템으로 더 효율적인 학습을 경험하세요
+              {t('home.subtitle')}
             </p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <GeometricButton onClick={() => navigate('/notes/create')} icon={<FaPen />}>
-                새 노트 작성
+                {t('home.createTextNote')}
               </GeometricButton>
               <GeometricButton 
                 onClick={() => navigate('/voice')} 
                 icon={<FaMicrophone />}
                 style={{ background: `linear-gradient(135deg, ${colors.cyan} 0%, ${colors.lime} 100%)` }}
               >
-                음성 노트 녹음
+                {t('home.createVoiceNote')}
               </GeometricButton>
             </div>
           </div>
@@ -358,40 +338,75 @@ const Home = () => {
         {/* Features Section */}
         <Section>
           <SectionHeader>
-            <h2>주요 기능</h2>
+            <h2>{t('home.features.title')}</h2>
           </SectionHeader>
           <FeatureGrid>
-            {features.map((feature, index) => {
-              const IconComponent = feature.icon;
-              return (
-                <FeatureCard key={index} color={feature.color}>
-                  <FeatureIcon color={feature.color}>
-                    <IconComponent />
-                  </FeatureIcon>
-                  <h3 style={{ fontSize: '1.3rem', fontWeight: 600, marginBottom: '12px', color: colors.darkGray }}>
-                    {feature.title}
-                  </h3>
-                  <p style={{ color: '#666', lineHeight: 1.6, marginBottom: '20px' }}>
-                    {feature.description}
-                  </p>
-                  <Button 
-                    variant="outline" 
-                    size="small" 
-                    onClick={() => navigate(feature.route)}
-                    icon={<FaArrowRight />}
-                  >
-                    시작하기
-                  </Button>
-                </FeatureCard>
-              );
-            })}
+            <FeatureCard color={colors.magenta}>
+              <FeatureIcon color={colors.magenta}>
+                <FaPen />
+              </FeatureIcon>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 600, marginBottom: '12px', color: colors.darkGray }}>
+                {t('home.features.smartText.title')}
+              </h3>
+              <p style={{ color: '#666', lineHeight: 1.6, marginBottom: '20px' }}>
+                {t('home.features.smartText.description')}
+              </p>
+              <Button 
+                variant="outline" 
+                size="small" 
+                onClick={() => navigate('/notes/create')}
+                icon={<FaArrowRight />}
+              >
+                {t('home.buttons.start')}
+              </Button>
+            </FeatureCard>
+            
+            <FeatureCard color={colors.cyan}>
+              <FeatureIcon color={colors.cyan}>
+                <FaMicrophone />
+              </FeatureIcon>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 600, marginBottom: '12px', color: colors.darkGray }}>
+                {t('home.features.voiceNote.title')}
+              </h3>
+              <p style={{ color: '#666', lineHeight: 1.6, marginBottom: '20px' }}>
+                {t('home.features.voiceNote.description')}
+              </p>
+              <Button 
+                variant="outline" 
+                size="small" 
+                onClick={() => navigate('/voice')}
+                icon={<FaArrowRight />}
+              >
+                {t('home.buttons.start')}
+              </Button>
+            </FeatureCard>
+            
+            <FeatureCard color={colors.lime}>
+              <FeatureIcon color={colors.lime}>
+                <FaChartLine />
+              </FeatureIcon>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 600, marginBottom: '12px', color: colors.darkGray }}>
+                {t('home.features.analysis.title')}
+              </h3>
+              <p style={{ color: '#666', lineHeight: 1.6, marginBottom: '20px' }}>
+                {t('home.features.analysis.description')}
+              </p>
+              <Button 
+                variant="outline" 
+                size="small" 
+                onClick={() => navigate('/profile')}
+                icon={<FaArrowRight />}
+              >
+                {t('home.buttons.start')}
+              </Button>
+            </FeatureCard>
           </FeatureGrid>
         </Section>
         
         {/* Recent Notes Section */}
         <Section>
           <SectionHeader>
-            <h2>최근 노트</h2>
+            <h2>{t('home.recentNotes.title')}</h2>
             <Button 
               onClick={() => navigate('/notes')}
               size="small"
@@ -403,7 +418,7 @@ const Home = () => {
               }}
               icon={<FaArrowRight />}
             >
-              모두 보기
+              {t('home.recentNotes.viewAll')}
             </Button>
           </SectionHeader>
           
@@ -426,7 +441,7 @@ const Home = () => {
                       <NoteMetaRow>
                         <NoteType isVoice={note.isVoice}>
                           {note.isVoice ? <FaMicrophone /> : <FaStickyNote />}
-                          {note.isVoice ? '음성' : '텍스트'}
+                          {t(`home.noteTypes.${note.isVoice ? 'voice' : 'text'}`)}
                         </NoteType>
                         <span>
                           {new Date(note.updatedAt).toLocaleDateString('ko-KR', { 
@@ -446,21 +461,21 @@ const Home = () => {
                 <FaStickyNote />
               </div>
               <h3 style={{ color: colors.darkGray, marginBottom: '16px' }}>
-                첫 번째 노트를 만들어보세요!
+                {t('home.recentNotes.empty.title')}
               </h3>
               <p style={{ color: '#666', marginBottom: '24px' }}>
-                AI가 도와주는 스마트한 노트 작성으로 학습의 새로운 경험을 시작하세요.
+                {t('home.recentNotes.empty.description')}
               </p>
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <Button onClick={() => navigate('/notes/create')} icon={<FaPen />}>
-                  텍스트 노트 작성
+                  {t('home.recentNotes.empty.createText')}
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={() => navigate('/voice')}
                   icon={<FaMicrophone />}
                 >
-                  음성 노트 녹음
+                  {t('home.recentNotes.empty.createVoice')}
                 </Button>
               </div>
             </EmptyState>
@@ -471,10 +486,10 @@ const Home = () => {
         <CTASection>
           <div style={{ position: 'relative', zIndex: 2 }}>
             <h3 style={{ marginBottom: '16px', fontSize: '1.5rem' }}>
-              어떤 걸 추가해야할까. 추천받습니다.
+              {t('home.cta.title')}
             </h3>
             <p style={{ marginBottom: '24px', opacity: 0.9 }}>
-              자유롭게 의견을 공유해주세요요
+              {t('home.cta.description')}
             </p>
             <Button 
               onClick={() => navigate('/profile')}
