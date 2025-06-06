@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next'; // 번역 훅 추가
 import styled from 'styled-components';
 import { 
   FaShareAlt, 
@@ -678,6 +679,7 @@ const EmptyState = styled.div`
 `;
 
 const SharedWithMeNotes = () => {
+  const { t } = useTranslation(); // 번역 훅
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { sharedNotes, loading, error } = useSelector(state => state.notes);
@@ -755,24 +757,24 @@ const SharedWithMeNotes = () => {
           <TitleSection>
             <h1>
               <FaGift />
-              공유받은 노트
+              {t('sharedWithMe.title')}
             </h1>
             <div className="subtitle">
-              동료들이 공유해준 소중한 지식들을 확인해보세요
+              {t('sharedWithMe.subtitle')}
             </div>
             {sharedWithMe.length > 0 && (
               <div className="stats">
                 <div className="stat-item">
                   <FaStickyNote />
-                  {sharedWithMe.length}개 노트
+                  {t('sharedWithMe.stats.totalReceived', { count: sharedWithMe.length })}
                 </div>
                 <div className="stat-item">
                   <FaUsers />
-                  {uniqueSharers}명이 공유
+                  {t('sharedWithMe.stats.totalSharers', { count: uniqueSharers })}
                 </div>
                 <div className="stat-item">
                   <FaMicrophone />
-                  {totalVoiceNotes}개 음성
+                  {t('sharedWithMe.stats.voiceNotes', { count: totalVoiceNotes })}
                 </div>
               </div>
             )}
@@ -780,7 +782,7 @@ const SharedWithMeNotes = () => {
           
           <HeaderActions>
             <BackButton onClick={() => navigate('/notes')} icon={<FaArrowLeft />}>
-              전체 노트로 이동
+              {t('common.back')}
             </BackButton>
           </HeaderActions>
         </HeaderContent>
@@ -805,28 +807,28 @@ const SharedWithMeNotes = () => {
                   <FaStickyNote />
                 </div>
                 <div className="number">{sharedWithMe.length}</div>
-                <div className="label">총 공유받은 노트</div>
+                <div className="label">{t('sharedWithMe.stats.totalReceived')}</div>
               </StatCard>
               <StatCard>
                 <div className="icon">
                   <FaUsers />
                 </div>
                 <div className="number">{uniqueSharers}</div>
-                <div className="label">공유한 사람</div>
+                <div className="label">{t('sharedWithMe.stats.totalSharers')}</div>
               </StatCard>
               <StatCard>
                 <div className="icon">
                   <FaMicrophone />
                 </div>
                 <div className="number">{totalVoiceNotes}</div>
-                <div className="label">음성 노트</div>
+                <div className="label">{t('sharedWithMe.stats.voiceNotes')}</div>
               </StatCard>
               <StatCard>
                 <div className="icon">
                   <FaFileAlt />
                 </div>
                 <div className="number">{totalTextNotes}</div>
-                <div className="label">텍스트 노트</div>
+                <div className="label">{t('sharedWithMe.stats.textNotes')}</div>
               </StatCard>
             </StatsGrid>
           </StatsSection>
@@ -844,7 +846,7 @@ const SharedWithMeNotes = () => {
                   <ActionButton 
                     variant="view"
                     onClick={(e) => handleViewNote(e, note._id)} 
-                    title="노트 보기"
+                    title={t('common.view')}
                   >
                     <FaEye />
                   </ActionButton>
@@ -853,7 +855,7 @@ const SharedWithMeNotes = () => {
                 <CardContent className="card-content">
                   <SharedBadge className="shared-badge">
                     <FaGift />
-                    공유받음
+                    {t('sharedWithMe.badge')}
                   </SharedBadge>
                   
                   <SharerInfo>
@@ -864,7 +866,7 @@ const SharedWithMeNotes = () => {
                       <div className="name">{note.user?.username || '사용자'}</div>
                       <div className="role">
                         <FaUser />
-                        공유자
+                        {t('sharedWithMe.sharer')}
                       </div>
                     </SharerDetails>
                   </SharerInfo>
@@ -875,7 +877,7 @@ const SharedWithMeNotes = () => {
                   <NoteFooter>
                     <NoteType $isVoice={note.isVoice}>
                       {note.isVoice ? <FaMicrophone /> : <FaStickyNote />}
-                      {note.isVoice ? '음성' : '텍스트'}
+                      {t(`notes.types.${note.isVoice ? 'voice' : 'text'}`)}
                     </NoteType>
                     <DateDisplay>
                       <FaClock />
@@ -892,14 +894,13 @@ const SharedWithMeNotes = () => {
               <FaGift />
             </div>
             <div className="text">
-              아직 공유받은 노트가 없습니다
+              {t('sharedWithMe.empty.title')}
             </div>
             <div className="subtext">
-              동료들이 노트를 공유해주면 여기에 표시됩니다.<br />
-              팀원들과 지식을 나누며 함께 성장해보세요!
+              {t('sharedWithMe.empty.description')}
             </div>
             <BackButton onClick={() => navigate('/notes')} icon={<FaStickyNote />}>
-              노트 목록으로 이동
+              {t('common.back')}
             </BackButton>
           </EmptyState>
         )}

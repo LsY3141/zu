@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next'; // 번역 훅 추가
 import styled from 'styled-components';
 import { 
   FaArrowLeft, 
@@ -506,6 +507,7 @@ const NoteEditor = ({ isEdit }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { t } = useTranslation(); // 번역 함수
   const { currentNote, loading, error, message } = useSelector(state => state.notes);
   
   const [formData, setFormData] = useState({
@@ -518,11 +520,12 @@ const NoteEditor = ({ isEdit }) => {
   const [tagInput, setTagInput] = useState('');
   const [formErrors, setFormErrors] = useState({});
   
+  // 카테고리 옵션 번역
   const categories = [
-    { value: '기본', label: '기본' },
-    { value: '학습', label: '학습' },
-    { value: '회의', label: '회의' },
-    { value: '개인', label: '개인' },
+    { value: '기본', label: t('notes.categories.basic') },
+    { value: '학습', label: t('notes.categories.study') },
+    { value: '회의', label: t('notes.categories.meeting') },
+    { value: '개인', label: t('notes.categories.personal') },
   ];
   
   useEffect(() => {
@@ -565,11 +568,11 @@ const NoteEditor = ({ isEdit }) => {
     const errors = {};
     
     if (!formData.title.trim()) {
-      errors.title = '제목을 입력해주세요.';
+      errors.title = t('editor.fields.title.label') + '을 입력해주세요.';
     }
     
     if (!formData.content.trim()) {
-      errors.content = '내용을 입력해주세요.';
+      errors.content = t('editor.fields.content.label') + '을 입력해주세요.';
     }
     
     setFormErrors(errors);
@@ -646,10 +649,10 @@ const NoteEditor = ({ isEdit }) => {
           <TitleSection>
             <h1>
               {isEdit ? <FaEdit /> : <FaPlus />}
-              {isEdit ? '노트 수정' : '새 노트 작성'}
+              {isEdit ? t('editor.title.edit') : t('editor.title.create')}
             </h1>
             <div className="subtitle">
-              {isEdit ? '기존 노트를 수정합니다' : '새로운 아이디어를 노트로 만들어보세요'}
+              {isEdit ? t('editor.subtitle.edit') : t('editor.subtitle.create')}
             </div>
           </TitleSection>
           
@@ -661,7 +664,7 @@ const NoteEditor = ({ isEdit }) => {
               onClick={handleCancel}
               icon={<FaTimes />}
             >
-              취소
+              {t('editor.actions.cancel')}
             </ActionButton>
             
             <ActionButton 
@@ -671,7 +674,10 @@ const NoteEditor = ({ isEdit }) => {
               icon={<FaSave />}
               disabled={loading}
             >
-              {loading ? '저장 중...' : (isEdit ? '수정하기' : '저장하기')}
+              {loading ? 
+                (isEdit ? t('editor.actions.updating') : t('editor.actions.saving')) : 
+                (isEdit ? t('editor.actions.update') : t('editor.actions.save'))
+              }
             </ActionButton>
           </HeaderActions>
         </HeaderContent>
@@ -695,8 +701,8 @@ const NoteEditor = ({ isEdit }) => {
               <FormSection>
                 <StyledInput
                   name="title"
-                  label="제목"
-                  placeholder="노트 제목을 입력하세요"
+                  label={t('editor.fields.title.label')}
+                  placeholder={t('editor.fields.title.placeholder')}
                   value={formData.title}
                   onChange={handleChange}
                   error={formErrors.title}
@@ -707,8 +713,8 @@ const NoteEditor = ({ isEdit }) => {
                 
                 <StyledTextArea
                   name="content"
-                  label="내용"
-                  placeholder="여기에 노트 내용을 작성하세요..."
+                  label={t('editor.fields.content.label')}
+                  placeholder={t('editor.fields.content.placeholder')}
                   value={formData.content}
                   onChange={handleChange}
                   error={formErrors.content}
@@ -724,12 +730,12 @@ const NoteEditor = ({ isEdit }) => {
             <SidebarCard $color="cyan">
               <h3>
                 <FaTags />
-                카테고리 & 태그
+                {t('editor.fields.category.label')} & {t('editor.fields.tags.label')}
               </h3>
               
               <StyledSelect
                 name="category"
-                label="카테고리"
+                label={t('editor.fields.category.label')}
                 value={formData.category}
                 onChange={handleChange}
                 options={categories}
@@ -746,7 +752,7 @@ const NoteEditor = ({ isEdit }) => {
                     color: colors.darkGray
                   }}
                 >
-                  태그
+                  {t('editor.fields.tags.label')}
                 </label>
                 
                 <TagsContainer>
@@ -757,7 +763,7 @@ const NoteEditor = ({ isEdit }) => {
                       fontSize: '13px',
                       fontStyle: 'italic'
                     }}>
-                      태그를 추가해보세요
+                      {t('editor.fields.tags.empty')}
                     </div>
                   ) : (
                     formData.tags.map((tag, index) => (
@@ -779,7 +785,7 @@ const NoteEditor = ({ isEdit }) => {
                 <TagInput>
                   <StyledInput
                     name="tagInput"
-                    placeholder="태그를 입력하세요"
+                    placeholder={t('editor.fields.tags.placeholder')}
                     value={tagInput}
                     onChange={handleTagInputChange}
                     onKeyPress={handleTagKeyPress}
@@ -793,7 +799,7 @@ const NoteEditor = ({ isEdit }) => {
                     disabled={!tagInput.trim() || loading}
                     icon={<FaPlus />}
                   >
-                    추가
+                    {t('editor.fields.tags.add')}
                   </AddTagButton>
                 </TagInput>
               </div>
@@ -802,31 +808,31 @@ const NoteEditor = ({ isEdit }) => {
             <SidebarCard $color="lime">
               <h3>
                 <FaLightbulb />
-                작성 도움말
+                {t('editor.help.title')}
               </h3>
               
               <HelpSection>
                 <div className="tip">
                   <FaKeyboard />
                   <div>
-                    <strong>카테고리</strong><br />
-                    카테고리를 이용하여 노트를 검색할 수 있어요.
+                    <strong>{t('editor.help.category.title')}</strong><br />
+                    {t('editor.help.category.description')}
                   </div>
                 </div>
                 
                 <div className="tip">
                   <FaTag />
                   <div>
-                    <strong>태그 활용</strong><br />
-                    관련 키워드를 태그로 추가하면 나중에 쉽게 찾을 수 있어요.
+                    <strong>{t('editor.help.tags.title')}</strong><br />
+                    {t('editor.help.tags.description')}
                   </div>
                 </div>
                 
                 <div className="tip">
                   <FaFileAlt />
                   <div>
-                    <strong>노트 이용</strong><br />
-                    노트의 내용을 자유롭게 채워서 저장하기를 누르면 사용할 수 있어요.
+                    <strong>{t('editor.help.general.title')}</strong><br />
+                    {t('editor.help.general.description')}
                   </div>
                 </div>
               </HelpSection>

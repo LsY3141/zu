@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next'; // 번역 훅 추가
 import styled from 'styled-components';
 import { 
   FaMicrophone, 
@@ -755,6 +756,7 @@ const HiddenFileInput = styled.input`
 `;
 
 const VoiceUpload = () => {
+  const { t } = useTranslation(); // 번역 함수
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { 
@@ -796,19 +798,19 @@ const VoiceUpload = () => {
   const [selectedLanguage, setSelectedLanguage] = useState('');
   
   const categories = [
-    { value: '기본', label: '기본' },
-    { value: '학습', label: '학습' },
-    { value: '회의', label: '회의' },
-    { value: '개인', label: '개인' },
+    { value: '기본', label: t('editor.fields.category') },
+    { value: '학습', label: t('notes.categories.study') },
+    { value: '회의', label: t('notes.categories.meeting') },
+    { value: '개인', label: t('notes.categories.personal') },
   ];
   
   const languageOptions = [
-    { value: 'en', label: '영어' },
-    { value: 'ja', label: '일본어' },
-    { value: 'zh', label: '중국어' },
-    { value: 'es', label: '스페인어' },
-    { value: 'fr', label: '프랑스어' },
-    { value: 'de', label: '독일어' },
+    { value: 'en', label: t('voice.translation.languages.en') },
+    { value: 'ja', label: t('voice.translation.languages.ja') },
+    { value: 'zh', label: t('voice.translation.languages.zh') },
+    { value: 'es', label: t('voice.translation.languages.es') },
+    { value: 'fr', label: t('voice.translation.languages.fr') },
+    { value: 'de', label: t('voice.translation.languages.de') },
   ];
 
   // Wave bars for recording visualization
@@ -834,7 +836,7 @@ const VoiceUpload = () => {
   // 트랜스크립션 결과가 있으면 노트 제목과 내용 설정
   useEffect(() => {
     if (transcriptionResults && transcriptionResults.text) {
-      const titleText = transcriptionResults.text.substring(0, 20) || '음성 녹음';
+      const titleText = transcriptionResults.text.substring(0, 20) || t('voice.recording.title');
       
       setNoteData(prev => ({
         ...prev,
@@ -844,7 +846,7 @@ const VoiceUpload = () => {
       
       setActiveStep(3);
     }
-  }, [transcriptionResults]);
+  }, [transcriptionResults, t]);
   
   // 메시지 알림 표시
   useEffect(() => {
@@ -893,11 +895,11 @@ const VoiceUpload = () => {
     const errors = {};
     
     if (!noteData.title.trim()) {
-      errors.title = '제목을 입력해주세요.';
+      errors.title = t('editor.fields.title.placeholder');
     }
     
     if (!noteData.content.trim()) {
-      errors.content = '내용을 입력해주세요.';
+      errors.content = t('editor.fields.content.placeholder');
     }
     
     setNoteErrors(errors);
@@ -1011,9 +1013,9 @@ const VoiceUpload = () => {
           <div>
             <ProcessingStatus loading={transcriptionJob?.status === 'IN_PROGRESS'}>
               <FaSyncAlt />
-              {transcriptionJob?.status === 'IN_PROGRESS' && '텍스트 변환 진행 중...'}
-              {transcriptionJob?.status === 'COMPLETED' && '텍스트 변환이 완료되었습니다.'}
-              {transcriptionJob?.status === 'FAILED' && '텍스트 변환이 실패했습니다.'}
+              {transcriptionJob?.status === 'IN_PROGRESS' && t('voice.processing.transcribing')}
+              {transcriptionJob?.status === 'COMPLETED' && t('voice.processing.completed')}
+              {transcriptionJob?.status === 'FAILED' && t('voice.processing.failed')}
             </ProcessingStatus>
             
             {transcriptionJob?.status === 'IN_PROGRESS' && (
@@ -1022,7 +1024,7 @@ const VoiceUpload = () => {
             
             {transcriptionResults && (
               <ResultCard>
-                <h3><FaFileAlt /> 변환 결과</h3>
+                <h3><FaFileAlt /> {t('voice.tabs.transcribe')}</h3>
                 <div className="content">
                   {transcriptionResults.speakers && transcriptionResults.speakers.length > 0 ? (
                     transcriptionResults.speakers.map((speaker, index) => (
@@ -1040,7 +1042,7 @@ const VoiceUpload = () => {
             {transcriptionJob?.status === 'FAILED' && (
               <Alert
                 variant="error"
-                message="음성 변환 중 오류가 발생했습니다. 다른 파일을 시도해보세요."
+                message={t('voice.processing.failed')}
               />
             )}
           </div>
@@ -1051,7 +1053,7 @@ const VoiceUpload = () => {
           <div>
             <ProcessingStatus>
               <FaListAlt />
-              요약 및 핵심 개념 추출
+              {t('voice.analysis.title')}
             </ProcessingStatus>
             
             <div style={{ textAlign: 'center', marginBottom: '30px' }}>
@@ -1060,13 +1062,13 @@ const VoiceUpload = () => {
                 disabled={loading || !transcriptionResults}
                 icon={<FaListAlt />}
               >
-                {loading ? '분석 중...' : '텍스트 분석하기'}
+                {loading ? t('voice.analysis.analyzing') : t('voice.analysis.button')}
               </ActionButton>
             </div>
             
             {analysisResults.summary && (
               <ResultCard>
-                <h3><FaFileAlt /> 요약</h3>
+                <h3><FaFileAlt /> {t('voice.analysis.summary')}</h3>
                 <div className="content">
                   {analysisResults.summary}
                 </div>
@@ -1075,7 +1077,7 @@ const VoiceUpload = () => {
             
             {analysisResults.keyPhrases && analysisResults.keyPhrases.length > 0 && (
               <ResultCard>
-                <h3><FaFileAlt /> 핵심 개념</h3>
+                <h3><FaFileAlt /> {t('voice.analysis.keywords')}</h3>
                 <TagsContainer>
                   {analysisResults.keyPhrases.map((phrase, index) => (
                     <Tag key={index}>
@@ -1090,7 +1092,7 @@ const VoiceUpload = () => {
             {loading && (
               <div style={{ textAlign: 'center', padding: '40px' }}>
                 <Spinner size="40px" />
-                <div style={{ marginTop: '20px', color: colors.darkGray }}>텍스트 분석 중...</div>
+                <div style={{ marginTop: '20px', color: colors.darkGray }}>{t('voice.processing.analyzing')}</div>
               </div>
             )}
           </div>
@@ -1101,11 +1103,11 @@ const VoiceUpload = () => {
           <div>
             <ProcessingStatus>
               <FaLanguage />
-              다른 언어로 번역하기
+              {t('voice.translation.title')}
             </ProcessingStatus>
             
             <div style={{ marginBottom: '30px' }}>
-              <h3 style={{ marginBottom: '20px', color: colors.darkGray }}>번역할 언어 선택</h3>
+              <h3 style={{ marginBottom: '20px', color: colors.darkGray }}>{t('voice.translation.selectLanguage')}</h3>
               <LanguageGrid>
                 {languageOptions.map(option => (
                   <LanguageButton
@@ -1139,13 +1141,13 @@ const VoiceUpload = () => {
                     onClick={() => {
                       navigator.clipboard.writeText(translationResults[lang]);
                       dispatch(showNotification({
-                        message: '번역 결과가 클립보드에 복사되었습니다.',
+                        message: t('voice.translation.copied'),
                         type: 'success',
                       }));
                     }}
                     icon={<FaCopy />}
                   >
-                    복사
+                    {t('voice.translation.copy')}
                   </ActionButton>
                 </div>
               </ResultCard>
@@ -1154,7 +1156,7 @@ const VoiceUpload = () => {
             {loading && (
               <div style={{ textAlign: 'center', padding: '40px' }}>
                 <Spinner size="40px" />
-                <div style={{ marginTop: '20px', color: colors.darkGray }}>번역 중...</div>
+                <div style={{ marginTop: '20px', color: colors.darkGray }}>{t('voice.processing.translating')}</div>
               </div>
             )}
           </div>
@@ -1168,9 +1170,9 @@ const VoiceUpload = () => {
   return (
     <VoiceUploadContainer>
       <Header>
-        <h1>🎤 AI 음성 노트</h1>
+        <h1>🎤 {t('voice.title')}</h1>
         <div className="subtitle">
-          음성을 텍스트로 변환하고 AI가 분석해드립니다
+          {t('voice.subtitle')}
         </div>
       </Header>
       
@@ -1197,19 +1199,19 @@ const VoiceUpload = () => {
               <StepNumber active={activeStep === 1} completed={activeStep > 1}>
                 {activeStep > 1 ? <FaCheck /> : '1'}
               </StepNumber>
-              <StepTitle>녹음 또는 업로드</StepTitle>
+              <StepTitle>{t('voice.steps.record')}</StepTitle>
             </Step>
             <Step completed={activeStep > 2}>
               <StepNumber active={activeStep === 2} completed={activeStep > 2}>
                 {activeStep > 2 ? <FaCheck /> : '2'}
               </StepNumber>
-              <StepTitle>AI 처리</StepTitle>
+              <StepTitle>{t('voice.steps.process')}</StepTitle>
             </Step>
             <Step>
               <StepNumber active={activeStep === 3}>
                 {activeStep === 3 ? <FaCheck /> : '3'}
               </StepNumber>
-              <StepTitle>노트 저장</StepTitle>
+              <StepTitle>{t('voice.steps.save')}</StepTitle>
             </Step>
           </StepIndicator>
         </StepsContainer>
@@ -1219,7 +1221,7 @@ const VoiceUpload = () => {
             <SectionCard>
               <SectionTitle>
                 <FaMicrophone />
-                음성 녹음
+                {t('voice.recording.title')}
               </SectionTitle>
               
               <RecordingSection>
@@ -1234,7 +1236,7 @@ const VoiceUpload = () => {
                       icon={<FaMicrophone />}
                       disabled={loading}
                     >
-                      녹음 시작
+                      {t('voice.recording.start')}
                     </ActionButton>
                   )}
                   
@@ -1251,7 +1253,7 @@ const VoiceUpload = () => {
                         onClick={cancelRecording}
                         icon={<FaTrash />}
                       >
-                        취소
+                        {t('voice.recording.cancel')}
                       </ActionButton>
                     </>
                   )}
@@ -1267,7 +1269,7 @@ const VoiceUpload = () => {
                         icon={<FaUpload />}
                         disabled={loading}
                       >
-                        {loading ? '업로드 중...' : '녹음 업로드'}
+                        {loading ? t('voice.recording.uploading') : t('voice.recording.upload')}
                       </ActionButton>
                       <ActionButton
                         variant="danger"
@@ -1275,7 +1277,7 @@ const VoiceUpload = () => {
                         icon={<FaTrash />}
                         disabled={loading}
                       >
-                        삭제
+                        {t('voice.recording.delete')}
                       </ActionButton>
                     </>
                   )}
@@ -1299,7 +1301,7 @@ const VoiceUpload = () => {
             <SectionCard>
               <SectionTitle>
                 <FaUpload />
-                파일 업로드
+                {t('voice.upload.title')}
               </SectionTitle>
               
               <FileUploadZone
@@ -1313,10 +1315,10 @@ const VoiceUpload = () => {
                   <FaUpload />
                 </UploadIcon>
                 <UploadText>
-                  음성 파일을 클릭하거나 드래그해서 업로드하세요
+                  {t('voice.upload.description')}
                 </UploadText>
                 <UploadSubtext>
-                  지원 형식: .mp3, .wav, .m4a (최대 100MB)
+                  {t('voice.upload.formats')}
                 </UploadSubtext>
                 <ActionButton
                   as="label"
@@ -1330,7 +1332,7 @@ const VoiceUpload = () => {
                     color: 'white'
                   }}
                 >
-                  파일 선택
+                  {t('voice.upload.select')}
                 </ActionButton>
                 <HiddenFileInput
                   id="file-upload"
@@ -1350,10 +1352,10 @@ const VoiceUpload = () => {
                     borderRadius: '8px'
                   }}>
                     <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>
-                      선택된 파일: {selectedFile.name}
+                      {t('voice.upload.selectedFile', { filename: selectedFile.name })}
                     </div>
                     <div style={{ color: colors.darkGray, opacity: 0.8 }}>
-                      크기: {fileSize(selectedFile.size)}
+                      {t('voice.upload.size', { size: fileSize(selectedFile.size) })}
                     </div>
                   </div>
                   
@@ -1367,7 +1369,7 @@ const VoiceUpload = () => {
                     disabled={loading}
                     style={{ width: '200px' }}
                   >
-                    {loading ? `업로드 중... ${fileUploadProgress}%` : '파일 업로드'}
+                    {loading ? `${t('voice.recording.uploading')} ${fileUploadProgress}%` : t('voice.recording.upload')}
                   </ActionButton>
                 </div>
               )}
@@ -1382,21 +1384,21 @@ const VoiceUpload = () => {
                 active={activeTab === 'transcribe'} 
                 onClick={() => setActiveTab('transcribe')}
               >
-                <FaFileAudio /> 텍스트 변환
+                <FaFileAudio /> {t('voice.tabs.transcribe')}
               </Tab>
               <Tab 
                 active={activeTab === 'analyze'}
                 onClick={() => setActiveTab('analyze')}
                 disabled={!transcriptionResults}
               >
-                <FaListAlt /> 분석
+                <FaListAlt /> {t('voice.tabs.analyze')}
               </Tab>
               <Tab 
                 active={activeTab === 'translate'}
                 onClick={() => setActiveTab('translate')}
                 disabled={!transcriptionResults}
               >
-                <FaLanguage /> 번역
+                <FaLanguage /> {t('voice.tabs.translate')}
               </Tab>
             </TabsContainer>
             
@@ -1420,7 +1422,7 @@ const VoiceUpload = () => {
           <SectionCard>
             <SectionTitle>
               <FaSave />
-              노트 저장
+              {t('voice.save.title')}
             </SectionTitle>
             
             <SaveNoteForm onSubmit={handleSaveNote}>
@@ -1428,8 +1430,8 @@ const VoiceUpload = () => {
                 <div>
                   <Input
                     name="title"
-                    label="제목"
-                    placeholder="노트 제목을 입력하세요"
+                    label={t('editor.fields.title.label')}
+                    placeholder={t('editor.fields.title.placeholder')}
                     value={noteData.title}
                     onChange={handleNoteChange}
                     error={noteErrors.title}
@@ -1439,8 +1441,8 @@ const VoiceUpload = () => {
                   
                   <TextArea
                     name="content"
-                    label="내용"
-                    placeholder="노트 내용을 입력하세요"
+                    label={t('editor.fields.content.label')}
+                    placeholder={t('editor.fields.content.placeholder')}
                     value={noteData.content}
                     onChange={handleNoteChange}
                     error={noteErrors.content}
@@ -1453,7 +1455,7 @@ const VoiceUpload = () => {
                 <div>
                   <Select
                     name="category"
-                    label="카테고리"
+                    label={t('editor.fields.category.label')}
                     value={noteData.category}
                     onChange={handleNoteChange}
                     options={categories}
@@ -1469,7 +1471,7 @@ const VoiceUpload = () => {
                         fontWeight: 500,
                         color: colors.darkGray
                       }}>
-                        자동 생성된 태그
+                        {t('voice.save.autoTags')}
                       </label>
                       <TagsContainer>
                         {analysisResults.keyPhrases.map((phrase, index) => (
@@ -1491,7 +1493,7 @@ const VoiceUpload = () => {
                   disabled={loading}
                   style={{ padding: '15px 40px', fontSize: '16px' }}
                 >
-                  {loading ? '저장 중...' : '노트 저장하기'}
+                  {loading ? t('voice.save.saving') : t('voice.save.button')}
                 </ActionButton>
               </div>
             </SaveNoteForm>

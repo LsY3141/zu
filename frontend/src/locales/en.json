@@ -41,5 +41,336 @@
 "buttons": {
     "start": "Get Started"
 }
+},
+"login": {
+"logo": {
+    "title": "AI Learning Support",
+    "subtitle": "Smart Note System"
+},
+"welcome": {
+    "title": "Welcome Back!",
+    "subtitle": "Continue your smart learning journey with AI. More efficient and systematic note management awaits you."
+},
+"features": {
+    "aiNotes": "AI-powered automatic note organization and tag generation",
+    "voiceToText": "Real-time voice to text conversion",
+    "personalizedAnalysis": "Personalized learning analysis and recommendations", 
+    "multiLanguage": "Multi-language translation and summary features"
+},
+"form": {
+    "title": "Login",
+    "subtitle": "Sign in to your account to get started"
+},
+"register": {
+    "text": "Don't have an account yet?",
+    "link": "Sign Up"
+}
+},
+"notes": {
+"title": "All Notes",
+"totalCount": "Total {{count}} notes",
+"search": {
+    "placeholder": "Search notes...",
+    "button": "Search",
+    "noResults": "No results found for \"{{query}}\"."
+},
+"categories": {
+    "all": "All",
+    "basic": "Basic",
+    "study": "Study",
+    "meeting": "Meeting",
+    "personal": "Personal"
+},
+"sort": {
+    "createdAt": "Created Date",
+    "updatedAt": "Last Modified",
+    "title": "Title",
+    "ascending": "Ascending",
+    "descending": "Descending"
+},
+"actions": {
+    "create": "Create New Note",
+    "edit": "Edit",
+    "share": "Share",
+    "delete": "Delete",
+    "restore": "Restore"
+},
+"empty": {
+    "title": "No notes created yet.",
+    "description": "Create your first note!",
+    "createButton": "Create New Note"
+},
+"types": {
+    "voice": "Voice",
+    "text": "Text"
+}
+},
+"editor": {
+"title": {
+    "create": "Create New Note",
+    "edit": "Edit Note"
+},
+"subtitle": {
+    "create": "Turn your new ideas into notes",
+    "edit": "Editing existing note"
+},
+"fields": {
+    "title": {
+    "label": "Title",
+    "placeholder": "Enter note title"
+    },
+    "content": {
+    "label": "Content",
+    "placeholder": "Write your note content here..."
+    },
+    "category": {
+    "label": "Category"
+    },
+    "tags": {
+    "label": "Tags",
+    "placeholder": "Enter tag",
+    "add": "Add",
+    "empty": "Add some tags"
+    }
+},
+"actions": {
+    "save": "Save",
+    "saving": "Saving...",
+    "update": "Update",
+    "updating": "Updating...",
+    "cancel": "Cancel"
+},
+"help": {
+    "title": "Writing Tips",
+    "category": {
+    "title": "Category",
+    "description": "Use categories to organize and search your notes easily."
+    },
+    "tags": {
+    "title": "Tag Usage",
+    "description": "Add relevant keywords as tags to find your notes later."
+    },
+    "general": {
+    "title": "Note Usage",
+    "description": "Fill in your note content freely and click save to use it."
+    }
+}
+},
+"voice": {
+"title": "AI Voice Notes",
+"subtitle": "Convert speech to text and let AI analyze it for you",
+"steps": {
+    "record": "Record or Upload",
+    "process": "AI Processing",
+    "save": "Save Note"
+},
+"recording": {
+    "title": "Voice Recording",
+    "start": "Start Recording",
+    "stop": "Stop Recording",
+    "cancel": "Cancel",
+    "upload": "Upload Recording",
+    "delete": "Delete",
+    "uploading": "Uploading..."
+},
+"upload": {
+    "title": "File Upload",
+    "description": "Click or drag to upload your audio file",
+    "formats": "Supported formats: .mp3, .wav, .m4a (max 100MB)",
+    "select": "Select File",
+    "selectedFile": "Selected file: {{filename}}",
+    "size": "Size: {{size}}"
+},
+"processing": {
+    "transcribing": "Converting speech to text...",
+    "completed": "Speech conversion completed.",
+    "failed": "Speech conversion failed.",
+    "analyzing": "Analyzing text...",
+    "translating": "Translating..."
+},
+"tabs": {
+    "transcribe": "Text Conversion",
+    "analyze": "Analysis",
+    "translate": "Translation"
+},
+"analysis": {
+    "title": "Summary and Key Concept Extraction",
+    "button": "Analyze Text",
+    "analyzing": "Analyzing...",
+    "summary": "Summary",
+    "keywords": "Key Concepts"
+},
+"translation": {
+    "title": "Translate to Other Languages",
+    "selectLanguage": "Select target language",
+    "languages": {
+    "en": "English",
+    "ja": "Japanese",
+    "zh": "Chinese",
+    "es": "Spanish",
+    "fr": "French",
+    "de": "German"
+    },
+    "copy": "Copy",
+    "copied": "Translation copied to clipboard."
+},
+"save": {
+    "title": "Save Note",
+    "button": "Save as Note",
+    "saving": "Saving...",
+    "autoTags": "Auto-generated Tags"
+}
+},
+"shared": {
+"title": "Shared Notes",
+"subtitle": "Notes you've shared with other users",
+"stats": {
+    "totalShared": "Shared Notes",
+    "totalUsers": "Shared Users"
+},
+"actions": {
+    "view": "View Note",
+    "copyLink": "Copy Link",
+    "linkCopied": "Share link copied to clipboard."
+},
+"empty": {
+    "title": "No shared notes yet.",
+    "button": "Go to Notes"
+},
+"badge": "Shared"
+},
+"sharedWithMe": {
+"title": "Shared with Me",
+"subtitle": "Valuable knowledge shared by your colleagues",
+"stats": {
+    "totalReceived": "Total Received Notes",
+    "totalSharers": "People Sharing",
+    "voiceNotes": "Voice Notes",
+    "textNotes": "Text Notes"
+},
+"sharer": "Sharer",
+"empty": {
+    "title": "No notes shared with you yet",
+    "description": "When colleagues share notes with you, they'll appear here.\\nGrow together by sharing knowledge with your team!"
+},
+"badge": "Received"
+},
+"trash": {
+"title": "Trash",
+"subtitle": "Restore or permanently delete notes",
+"warning": "Deleted notes will be automatically removed after 30 days",
+"stats": {
+    "deletedNotes": "Deleted Notes",
+    "recent24h": "Last 24 Hours",
+    "voiceNotes": "Voice Notes",
+    "textNotes": "Text Notes"
+},
+"actions": {
+    "restore": "Restore",
+    "permanentDelete": "Delete Permanently",
+    "back": "Back to Notes"
+},
+"confirmRestore": {
+    "title": "Restore Note",
+    "message": "Do you want to restore the selected note?",
+    "confirm": "Restore",
+    "cancel": "Cancel"
+},
+"confirmDelete": {
+    "title": "Permanently Delete Note",
+    "message": "Do you want to permanently delete the selected note? This action cannot be undone.",
+    "confirm": "Delete Permanently",
+    "cancel": "Cancel"
+},
+"empty": {
+    "title": "Trash is empty",
+    "description": "No deleted notes.\\nKeeping things clean! 🎉"
+},
+"deleted": "Deleted",
+"deletedAt": "Deleted {{time}}",
+"originalTime": "Original: Modified {{time}}"
+},
+"profile": {
+"title": "Profile Settings",
+"sections": {
+    "basic": {
+    "title": "Basic Information",
+    "username": {
+        "label": "Username"
+    },
+    "email": {
+        "label": "Email"
+    },
+    "language": {
+        "label": "Default Language",
+        "options": {
+        "ko": "Korean",
+        "en": "English",
+        "ja": "Japanese",
+        "zh": "Chinese"
+        }
+    },
+    "save": "Save Changes",
+    "saving": "Saving..."
+    },
+    "security": {
+    "title": "Security Settings",
+    "currentPassword": {
+        "label": "Current Password"
+    },
+    "newPassword": {
+        "label": "New Password"
+    },
+    "confirmPassword": {
+        "label": "Confirm New Password"
+    },
+    "change": "Change Password",
+    "changing": "Changing..."
+    },
+    "stats": {
+    "title": "Activity Stats & Achievements",
+    "totalNotes": "Total Notes",
+    "speechMinutes": "Speech Processing (minutes)",
+    "monthlyNotes": "This Month",
+    "memberDays": "Days with Us",
+    "achievements": {
+        "noteMaster": "Note Master",
+        "speechExpert": "Speech Expert",
+        "activeUser": "Active User",
+        "loyalMember": "Loyal Member"
+    }
+    }
+},
+"memberSince": "Member for {{days}} days",
+"role": "Enthusiastic User"
+},
+"common": {
+"loading": "Loading...",
+"error": "An error occurred",
+"success": "Successfully completed",
+"confirm": "Confirm",
+"cancel": "Cancel",
+"save": "Save",
+"delete": "Delete",
+"edit": "Edit",
+"share": "Share",
+"back": "Back",
+"close": "Close",
+"search": "Search",
+"filter": "Filter",
+"sort": "Sort",
+"view": "View",
+"copy": "Copy",
+"time": {
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago",
+    "weeksAgo": "{{count}} weeks ago",
+    "monthsAgo": "{{count}} months ago",
+    "yearsAgo": "{{count}} years ago",
+    "lastModified": "Modified {{time}}",
+    "created": "Created {{time}}"
+}
 }
 }

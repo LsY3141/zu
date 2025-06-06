@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next'; // 번역 훅 추가
 import styled from 'styled-components';
 import { 
   FaUser, 
@@ -559,6 +560,7 @@ const AchievementBadge = styled.div`
 `;
 
 const Profile = () => {
+  const { t } = useTranslation(); // 번역 함수
   const dispatch = useDispatch();
   const { user, loading, error, message } = useSelector(state => state.auth);
   
@@ -578,10 +580,10 @@ const Profile = () => {
   const [passwordErrors, setPasswordErrors] = useState({});
   
   const languageOptions = [
-    { value: 'ko', label: '한국어' },
-    { value: 'en', label: '영어' },
-    { value: 'ja', label: '일본어' },
-    { value: 'zh', label: '중국어' },
+    { value: 'ko', label: t('profile.sections.basic.language.options.ko') },
+    { value: 'en', label: t('profile.sections.basic.language.options.en') },
+    { value: 'ja', label: t('profile.sections.basic.language.options.ja') },
+    { value: 'zh', label: t('profile.sections.basic.language.options.zh') },
   ];
   
   useEffect(() => {
@@ -607,13 +609,13 @@ const Profile = () => {
     const errors = {};
     
     if (!profileData.username.trim()) {
-      errors.username = '사용자명을 입력해주세요.';
+      errors.username = t('profile.sections.basic.username.error', { defaultValue: '사용자명을 입력해주세요.' });
     }
     
     if (!profileData.email.trim()) {
-      errors.email = '이메일을 입력해주세요.';
+      errors.email = t('profile.sections.basic.email.error', { defaultValue: '이메일을 입력해주세요.' });
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileData.email)) {
-      errors.email = '유효한 이메일 형식이 아닙니다.';
+      errors.email = t('profile.sections.basic.email.invalidError', { defaultValue: '유효한 이메일 형식이 아닙니다.' });
     }
     
     setProfileErrors(errors);
@@ -624,19 +626,19 @@ const Profile = () => {
     const errors = {};
     
     if (!passwordData.oldPassword) {
-      errors.oldPassword = '현재 비밀번호를 입력해주세요.';
+      errors.oldPassword = t('profile.sections.security.currentPassword.error', { defaultValue: '현재 비밀번호를 입력해주세요.' });
     }
     
     if (!passwordData.newPassword) {
-      errors.newPassword = '새 비밀번호를 입력해주세요.';
+      errors.newPassword = t('profile.sections.security.newPassword.error', { defaultValue: '새 비밀번호를 입력해주세요.' });
     } else if (passwordData.newPassword.length < 6) {
-      errors.newPassword = '비밀번호는 6자 이상이어야 합니다.';
+      errors.newPassword = t('profile.sections.security.newPassword.lengthError', { defaultValue: '비밀번호는 6자 이상이어야 합니다.' });
     }
     
     if (!passwordData.confirmPassword) {
-      errors.confirmPassword = '비밀번호 확인을 입력해주세요.';
+      errors.confirmPassword = t('profile.sections.security.confirmPassword.error', { defaultValue: '비밀번호 확인을 입력해주세요.' });
     } else if (passwordData.newPassword !== passwordData.confirmPassword) {
-      errors.confirmPassword = '비밀번호가 일치하지 않습니다.';
+      errors.confirmPassword = t('profile.sections.security.confirmPassword.mismatchError', { defaultValue: '비밀번호가 일치하지 않습니다.' });
     }
     
     setPasswordErrors(errors);
@@ -700,14 +702,14 @@ const Profile = () => {
   };
   
   const getMemberSince = (date) => {
-    if (!date) return '최근';
+    if (!date) return t('profile.memberSince', { days: 0 });
     const createdDate = new Date(date);
     const now = new Date();
     const diffDays = Math.floor((now - createdDate) / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 30) return `${diffDays}일 전 가입`;
-    if (diffDays < 365) return `${Math.floor(diffDays / 30)}개월 전 가입`;
-    return `${Math.floor(diffDays / 365)}년 전 가입`;
+    if (diffDays < 30) return t('profile.memberSince', { days: diffDays });
+    if (diffDays < 365) return t('profile.memberSince', { days: Math.floor(diffDays / 30) * 30 });
+    return t('profile.memberSince', { days: Math.floor(diffDays / 365) * 365 });
   };
   
   // 통계 계산
@@ -726,19 +728,19 @@ const Profile = () => {
             <AvatarContainer>
               {getInitials(user?.username)}
             </AvatarContainer>
-            <AvatarEditButton title="프로필 사진 변경">
+            <AvatarEditButton title={t('profile.avatarEdit', { defaultValue: '프로필 사진 변경' })}>
               <FaCamera />
             </AvatarEditButton>
           </ProfileAvatar>
           
           <ProfileInfo>
             <h1>
-              {user?.username || '사용자'}
+              {user?.username || t('common.user', { defaultValue: '사용자' })}
               <FaCrown style={{ color: colors.gold }} />
             </h1>
             <div className="title">
               <FaTrophy />
-              열렬한 이용자
+              {t('profile.role')}
             </div>
             <div className="member-since">
               <FaCalendarDay />
@@ -762,13 +764,13 @@ const Profile = () => {
         <SectionGrid>
           <SectionCard $color="purple">
             <SectionTitle $iconColor={colors.purple}>
-              <FaUser /> 기본 정보
+              <FaUser /> {t('profile.sections.basic.title')}
             </SectionTitle>
             <form onSubmit={handleProfileSubmit}>
               <FormContainer>
                 <StyledInput
                   name="username"
-                  label="사용자명"
+                  label={t('profile.sections.basic.username.label')}
                   value={profileData.username}
                   onChange={handleProfileChange}
                   icon={<FaUser />}
@@ -778,7 +780,7 @@ const Profile = () => {
                 
                 <StyledInput
                   name="email"
-                  label="이메일"
+                  label={t('profile.sections.basic.email.label')}
                   type="email"
                   value={profileData.email}
                   onChange={handleProfileChange}
@@ -789,7 +791,7 @@ const Profile = () => {
                 
                 <StyledSelect
                   name="language"
-                  label="기본 언어"
+                  label={t('profile.sections.basic.language.label')}
                   value={profileData.language}
                   onChange={handleProfileChange}
                   options={languageOptions}
@@ -803,7 +805,7 @@ const Profile = () => {
                   icon={<FaSave />}
                   $variant="save"
                 >
-                  {loading ? '저장 중...' : '변경사항 저장'}
+                  {loading ? t('profile.sections.basic.saving') : t('profile.sections.basic.save')}
                 </ActionButton>
               </FormContainer>
             </form>
@@ -811,13 +813,13 @@ const Profile = () => {
           
           <SectionCard $color="cyan">
             <SectionTitle $iconColor={colors.magenta}>
-              <FaShieldAlt /> 보안 설정
+              <FaShieldAlt /> {t('profile.sections.security.title')}
             </SectionTitle>
             <form onSubmit={handlePasswordSubmit}>
               <FormContainer>
                 <StyledInput
                   name="oldPassword"
-                  label="현재 비밀번호"
+                  label={t('profile.sections.security.currentPassword.label')}
                   type="password"
                   value={passwordData.oldPassword}
                   onChange={handlePasswordChange}
@@ -828,7 +830,7 @@ const Profile = () => {
                 
                 <StyledInput
                   name="newPassword"
-                  label="새 비밀번호"
+                  label={t('profile.sections.security.newPassword.label')}
                   type="password"
                   value={passwordData.newPassword}
                   onChange={handlePasswordChange}
@@ -839,7 +841,7 @@ const Profile = () => {
                 
                 <StyledInput
                   name="confirmPassword"
-                  label="새 비밀번호 확인"
+                  label={t('profile.sections.security.confirmPassword.label')}
                   type="password"
                   value={passwordData.confirmPassword}
                   onChange={handlePasswordChange}
@@ -854,7 +856,7 @@ const Profile = () => {
                   icon={<FaShieldAlt />}
                   $variant="security"
                 >
-                  {loading ? '변경 중...' : '비밀번호 변경'}
+                  {loading ? t('profile.sections.security.changing') : t('profile.sections.security.change')}
                 </ActionButton>
               </FormContainer>
             </form>
@@ -863,7 +865,7 @@ const Profile = () => {
         
         <UsageStatsCard>
           <SectionTitle $iconColor={colors.gold}>
-            <FaTrophy /> 활동 통계 & 성과
+            <FaTrophy /> {t('profile.sections.stats.title')}
           </SectionTitle>
           
           <StatsGrid>
@@ -872,11 +874,11 @@ const Profile = () => {
                 <FaFileAlt />
               </StatIcon>
               <StatValue>{totalNotes}</StatValue>
-              <StatLabel>총 노트 수</StatLabel>
+              <StatLabel>{t('profile.sections.stats.totalNotes')}</StatLabel>
               {totalNotes >= 10 && (
                 <AchievementBadge>
                   <FaTrophy />
-                  노트 마스터
+                  {t('profile.sections.stats.achievements.noteMaster')}
                 </AchievementBadge>
               )}
             </StatItem>
@@ -886,11 +888,11 @@ const Profile = () => {
                 <FaMicrophone />
               </StatIcon>
               <StatValue>{speechMinutes}</StatValue>
-              <StatLabel>음성 처리 시간 (분)</StatLabel>
+              <StatLabel>{t('profile.sections.stats.speechMinutes')}</StatLabel>
               {speechMinutes >= 60 && (
                 <AchievementBadge>
                   <FaFire />
-                  음성 전문가
+                  {t('profile.sections.stats.achievements.speechExpert')}
                 </AchievementBadge>
               )}
             </StatItem>
@@ -900,11 +902,11 @@ const Profile = () => {
                 <FaChartBar />
               </StatIcon>
               <StatValue>{monthlyNotes}</StatValue>
-              <StatLabel>이번 달 작성</StatLabel>
+              <StatLabel>{t('profile.sections.stats.monthlyNotes')}</StatLabel>
               {monthlyNotes >= 5 && (
                 <AchievementBadge>
                   <FaFire />
-                  활발한 활동
+                  {t('profile.sections.stats.achievements.activeUser')}
                 </AchievementBadge>
               )}
             </StatItem>
@@ -914,11 +916,11 @@ const Profile = () => {
                 <FaClock />
               </StatIcon>
               <StatValue>{memberDays}</StatValue>
-              <StatLabel>함께한 일수</StatLabel>
+              <StatLabel>{t('profile.sections.stats.memberDays')}</StatLabel>
               {memberDays >= 30 && (
                 <AchievementBadge>
                   <FaCrown />
-                  충성 회원
+                  {t('profile.sections.stats.achievements.loyalMember')}
                 </AchievementBadge>
               )}
             </StatItem>

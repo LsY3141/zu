@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next'; // 번역 훅 추가
 import styled from 'styled-components';
 import { 
   FaTrashRestore, 
@@ -683,6 +684,7 @@ const EmptyState = styled.div`
 `;
 
 const Trash = () => {
+  const { t } = useTranslation(); // 번역 함수
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
@@ -730,10 +732,10 @@ const Trash = () => {
     };
     
     dispatch(openConfirmDialog({
-      title: '노트 복원',
-      message: '선택한 노트를 복원하시겠습니까?',
-      confirmText: '복원',
-      cancelText: '취소',
+      title: t('trash.confirmRestore.title'),
+      message: t('trash.confirmRestore.message'),
+      confirmText: t('trash.confirmRestore.confirm'),
+      cancelText: t('trash.confirmRestore.cancel'),
       onConfirm: confirmAction,
     }));
   };
@@ -760,10 +762,10 @@ const Trash = () => {
     };
     
     dispatch(openConfirmDialog({
-      title: '노트 영구 삭제',
-      message: '선택한 노트를 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
-      confirmText: '영구 삭제',
-      cancelText: '취소',
+      title: t('trash.confirmDelete.title'),
+      message: t('trash.confirmDelete.message'),
+      confirmText: t('trash.confirmDelete.confirm'),
+      cancelText: t('trash.confirmDelete.cancel'),
       onConfirm: confirmAction,
       danger: true
     }));
@@ -780,12 +782,12 @@ const Trash = () => {
   };
   
   const formatDate = (date) => {
-    if (!date) return '알 수 없음';
+    if (!date) return t('common.time.unknown', { defaultValue: '알 수 없음' });
     try {
       return formatRelativeTime(date);
     } catch (error) {
       console.error('날짜 포맷팅 오류:', error);
-      return '날짜 오류';
+      return t('common.error', { defaultValue: '날짜 오류' });
     }
   };
   
@@ -807,20 +809,20 @@ const Trash = () => {
           <TitleSection>
             <h1>
               <FaTrashAlt />
-              휴지통
+              {t('trash.title')}
             </h1>
             <div className="subtitle">
-              삭제된 노트들을 복원하거나 영구 삭제할 수 있습니다
+              {t('trash.subtitle')}
             </div>
             <div className="warning">
               <FaShieldAlt />
-              삭제된 노트는 30일 후 자동으로 영구 삭제됩니다
+              {t('trash.warning')}
             </div>
           </TitleSection>
           
           <HeaderActions>
             <BackButton onClick={() => navigate('/notes')} icon={<FaArrowLeft />}>
-              노트 목록으로 이동
+              {t('trash.actions.back')}
             </BackButton>
           </HeaderActions>
         </HeaderContent>
@@ -845,28 +847,28 @@ const Trash = () => {
                   <FaTrashAlt />
                 </div>
                 <div className="number">{notes.length}</div>
-                <div className="label">삭제된 노트</div>
+                <div className="label">{t('trash.stats.deletedNotes')}</div>
               </StatCard>
               <StatCard>
                 <div className="icon">
                   <FaHistory />
                 </div>
                 <div className="number">{recentlyDeleted}</div>
-                <div className="label">최근 24시간</div>
+                <div className="label">{t('trash.stats.recent24h')}</div>
               </StatCard>
               <StatCard>
                 <div className="icon">
                   <FaMicrophone />
                 </div>
                 <div className="number">{totalVoiceNotes}</div>
-                <div className="label">음성 노트</div>
+                <div className="label">{t('trash.stats.voiceNotes')}</div>
               </StatCard>
               <StatCard>
                 <div className="icon">
                   <FaStickyNote />
                 </div>
                 <div className="number">{totalTextNotes}</div>
-                <div className="label">텍스트 노트</div>
+                <div className="label">{t('trash.stats.textNotes')}</div>
               </StatCard>
             </StatsGrid>
           </StatsSection>
@@ -888,17 +890,21 @@ const Trash = () => {
                   <CardContent className="card-content">
                     <DeletedBadge className="deleted-badge">
                       <FaTrashAlt />
-                      삭제됨
+                      {t('trash.deleted')}
                     </DeletedBadge>
                     
                     <TimeInfo>
                       <TimeItem className="deleted-time">
                         <FaTrashAlt />
-                        <span>{note.deletedAt ? formatDate(note.deletedAt) : '알 수 없음'} 삭제됨</span>
+                        <span>{t('trash.deletedAt', { 
+                          time: note.deletedAt ? formatDate(note.deletedAt) : t('common.time.unknown', { defaultValue: '알 수 없음' })
+                        })}</span>
                       </TimeItem>
                       <TimeItem className="original-time">
                         <FaCalendarDay />
-                        <span>원본: {note.updatedAt ? formatDate(note.updatedAt) : '알 수 없음'} 수정됨</span>
+                        <span>{t('trash.originalTime', { 
+                          time: note.updatedAt ? formatDate(note.updatedAt) : t('common.time.unknown', { defaultValue: '알 수 없음' })
+                        })}</span>
                       </TimeItem>
                     </TimeInfo>
                     
@@ -908,7 +914,7 @@ const Trash = () => {
                     <NoteFooter>
                       <NoteType $isVoice={note.isVoice}>
                         {note.isVoice ? <FaMicrophone /> : <FaStickyNote />}
-                        {note.isVoice ? '음성' : '텍스트'}
+                        {t(`notes.types.${note.isVoice ? 'voice' : 'text'}`)}
                       </NoteType>
                     </NoteFooter>
                     
@@ -918,14 +924,14 @@ const Trash = () => {
                         onClick={() => handleNoteRestore(note._id, note.title)}
                         icon={<FaUndo />}
                       >
-                        복원하기
+                        {t('trash.actions.restore')}
                       </ActionButton>
                       <ActionButton
                         className="delete-btn"
                         onClick={() => handleNoteDelete(note._id, note.title)}
                         icon={<FaTimes />}
                       >
-                        영구 삭제
+                        {t('trash.actions.permanentDelete')}
                       </ActionButton>
                     </ActionButtons>
                   </CardContent>
@@ -939,14 +945,13 @@ const Trash = () => {
               <FaRecycle />
             </div>
             <div className="text">
-              휴지통이 비어 있습니다
+              {t('trash.empty.title')}
             </div>
             <div className="subtext">
-              삭제된 노트가 없습니다.<br />
-              깨끗한 상태를 유지하고 있어요! 🎉
+              {t('trash.empty.description')}
             </div>
             <BackButton onClick={() => navigate('/notes')} icon={<FaStickyNote />}>
-              노트 목록으로 이동
+              {t('trash.actions.back')}
             </BackButton>
           </EmptyState>
         )}

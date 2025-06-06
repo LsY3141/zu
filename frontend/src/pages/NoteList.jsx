@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next'; // 번역 훅 추가
 import styled from 'styled-components';
 import { 
   FaList, 
@@ -625,27 +626,30 @@ const EmptyState = styled.div`
   }
 `;
 
-const CATEGORIES = [
-  { value: '전체', label: '전체' },
-  { value: '기본', label: '기본' },
-  { value: '학습', label: '학습' },
-  { value: '회의', label: '회의' },
-  { value: '개인', label: '개인' },
-];
-
-const SORT_OPTIONS = [
-  { value: 'createdAt', label: '생성일' },
-  { value: 'updatedAt', label: '최근 수정일' },
-  { value: 'title', label: '제목' },
-];
-
 const NoteListComponent = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { t } = useTranslation(); // 번역 함수
   const { viewMode } = useSelector(state => state.ui);
   const { notes, loading, filters, pagination, handleTrashNote } = useNotes();
   
   const [localSearchText, setLocalSearchText] = useState(filters.searchText || '');
+
+  // 카테고리 옵션 번역
+  const CATEGORIES = [
+    { value: '전체', label: t('notes.categories.all') },
+    { value: '기본', label: t('notes.categories.basic') },
+    { value: '학습', label: t('notes.categories.study') },
+    { value: '회의', label: t('notes.categories.meeting') },
+    { value: '개인', label: t('notes.categories.personal') },
+  ];
+
+  // 정렬 옵션 번역
+  const SORT_OPTIONS = [
+    { value: 'createdAt', label: t('notes.sort.createdAt') },
+    { value: 'updatedAt', label: t('notes.sort.updatedAt') },
+    { value: 'title', label: t('notes.sort.title') },
+  ];
 
   useEffect(() => {
     setLocalSearchText(filters.searchText || '');
@@ -718,25 +722,25 @@ const NoteListComponent = () => {
         day: 'numeric' 
       });
     } else if (diffDays > 0) {
-      return `${diffDays}일 전`;
+      return t('common.time.daysAgo', { count: diffDays });
     } else if (diffHours > 0) {
-      return `${diffHours}시간 전`;
+      return t('common.time.hoursAgo', { count: diffHours });
     } else if (diffMinutes > 0) {
-      return `${diffMinutes}분 전`;
+      return t('common.time.minutesAgo', { count: diffMinutes });
     } else {
-      return '방금 전';
+      return t('common.time.justNow');
     }
   };
 
   const renderActions = (note) => (
     <NoteActions className="actions">
-      <ActionButton onClick={(e) => handleEdit(e, note._id)} title="수정">
+      <ActionButton onClick={(e) => handleEdit(e, note._id)} title={t('notes.actions.edit')}>
         <FaEdit />
       </ActionButton>
-      <ActionButton onClick={(e) => handleShare(e, note._id)} title="공유" $color="info">
+      <ActionButton onClick={(e) => handleShare(e, note._id)} title={t('notes.actions.share')} $color="info">
         <FaShareAlt />
       </ActionButton>
-      <ActionButton onClick={(e) => handleDelete(e, note._id)} title="삭제" $color="danger">
+      <ActionButton onClick={(e) => handleDelete(e, note._id)} title={t('notes.actions.delete')} $color="danger">
         <FaTrash />
       </ActionButton>
     </NoteActions>
@@ -750,7 +754,7 @@ const NoteListComponent = () => {
           <h2>{note.title}</h2>
           <NoteTypeTag $isVoice={note.isVoice}>
             {note.isVoice ? <FaMicrophone /> : <FaStickyNote />}
-            {note.isVoice ? '음성' : '텍스트'}
+            {note.isVoice ? t('notes.types.voice') : t('notes.types.text')}
           </NoteTypeTag>
         </ListHeader>
         <Excerpt>{truncateText(note.content)}</Excerpt>
@@ -782,7 +786,7 @@ const NoteListComponent = () => {
       <GridFooter>
         <NoteTypeTag $isVoice={note.isVoice} $small>
           {note.isVoice ? <FaMicrophone /> : <FaStickyNote />}
-          {note.isVoice ? '음성' : '텍스트'}
+          {note.isVoice ? t('notes.types.voice') : t('notes.types.text')}
         </NoteTypeTag>
         <DateDisplay>
           <FaClock />
@@ -799,13 +803,13 @@ const NoteListComponent = () => {
       <Header>
         <HeaderTop>
           <TitleSection>
-            <h1>전체 노트</h1>
-            <div className="count">총 {pagination.total}개의 노트</div>
+            <h1>{t('notes.title')}</h1>
+            <div className="count">{t('notes.totalCount', { count: pagination.total })}</div>
           </TitleSection>
           
           <HeaderActions>
             <CreateButton onClick={handleCreateNote} icon={<FaPlus />}>
-              새 노트 작성
+              {t('notes.actions.create')}
             </CreateButton>
             
             <ViewButtons>
@@ -831,13 +835,13 @@ const NoteListComponent = () => {
           <SearchInputContainer>
             <Input
               name="searchText"
-              placeholder="노트를 검색하세요..."
+              placeholder={t('notes.search.placeholder')}
               value={localSearchText}
               onChange={handleFilterChange}
               onKeyPress={handleSearchKeyPress}
               icon={<FaFilter />}
             />
-            <SearchButton onClick={handleSearch} title="검색">
+            <SearchButton onClick={handleSearch} title={t('notes.search.button')}>
               <FaSearch size={14} />
             </SearchButton>
           </SearchInputContainer>
@@ -862,7 +866,7 @@ const NoteListComponent = () => {
             </div>
             <SortButton
               onClick={handleSortToggle}
-              title={filters.sortOrder === 'desc' ? '내림차순' : '오름차순'}
+              title={filters.sortOrder === 'desc' ? t('notes.sort.descending') : t('notes.sort.ascending')}
             >
               {filters.sortOrder === 'desc' ? <FaSortAmountDown /> : <FaSortAmountUp />}
             </SortButton>
@@ -896,11 +900,11 @@ const NoteListComponent = () => {
             </div>
             <div className="text">
               {localSearchText
-                ? `"${localSearchText}" 검색 결과가 없습니다.`
-                : '아직 작성된 노트가 없습니다. 첫 번째 노트를 만들어보세요!'}
+                ? t('notes.search.noResults', { query: localSearchText })
+                : t('notes.empty.title')}
             </div>
             <CreateButton onClick={handleCreateNote} icon={<FaPlus />}>
-              새 노트 작성하기
+              {t('notes.empty.createButton')}
             </CreateButton>
           </EmptyState>
         )}

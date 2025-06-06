@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next'; // 번역 훅 추가
 import styled from 'styled-components';
 import { 
   FaShareAlt, 
@@ -20,7 +21,7 @@ import Spinner from '../components/shared/Spinner';
 import Alert from '../components/shared/Alert';
 import { formatRelativeTime } from '../utils/formatters';
 
-// Colors - 메인 페이지와 동일한 컬러 팔레트
+// Colors - 메인페이지와 동일한 컬러 팔레트
 const colors = {
   magenta: '#E91E63',
   cyan: '#00BCD4', 
@@ -505,6 +506,7 @@ const StatItem = styled.div`
 `;
 
 const SharedByMeNotes = () => {
+  const { t } = useTranslation(); // 번역 함수
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { sharedNotes, loading, error } = useSelector(state => state.notes);
@@ -522,8 +524,7 @@ const SharedByMeNotes = () => {
   const handleCopyLink = (e, shareLink) => {
     e.stopPropagation();
     navigator.clipboard.writeText(shareLink);
-    // TODO: 성공 알림 추가
-    alert('공유 링크가 클립보드에 복사되었습니다.');
+    alert(t('shared.actions.linkCopied'));
   };
   
   const handleViewNote = (e, noteId) => {
@@ -551,13 +552,13 @@ const SharedByMeNotes = () => {
         day: 'numeric' 
       });
     } else if (diffDays > 0) {
-      return `${diffDays}일 전`;
+      return t('common.time.daysAgo', { count: diffDays });
     } else if (diffHours > 0) {
-      return `${diffHours}시간 전`;
+      return t('common.time.hoursAgo', { count: diffHours });
     } else if (diffMinutes > 0) {
-      return `${diffMinutes}분 전`;
+      return t('common.time.minutesAgo', { count: diffMinutes });
     } else {
-      return '방금 전';
+      return t('common.time.justNow');
     }
   };
   
@@ -579,16 +580,16 @@ const SharedByMeNotes = () => {
           <TitleSection>
             <h1>
               <FaShareAlt />
-              공유한 노트
+              {t('shared.title')}
             </h1>
             <div className="subtitle">
-              다른 사용자와 공유한 노트 목록입니다
+              {t('shared.subtitle')}
             </div>
           </TitleSection>
           
           <HeaderActions>
             <BackButton onClick={() => navigate('/notes')} icon={<FaStickyNote />}>
-              전체 노트로 이동
+              {t('shared.empty.button')}
             </BackButton>
           </HeaderActions>
         </HeaderContent>
@@ -610,11 +611,11 @@ const SharedByMeNotes = () => {
             <StatsGrid>
               <StatItem>
                 <div className="number">{sharedByMe.length}</div>
-                <div className="label">공유한 노트</div>
+                <div className="label">{t('shared.stats.totalShared')}</div>
               </StatItem>
               <StatItem>
                 <div className="number">{totalSharedUsers}</div>
-                <div className="label">공유받은 사용자</div>
+                <div className="label">{t('shared.stats.totalUsers')}</div>
               </StatItem>
             </StatsGrid>
           </StatsSection>
@@ -630,7 +631,7 @@ const SharedByMeNotes = () => {
                 <ShareActions className="share-actions">
                   <ActionButton 
                     onClick={(e) => handleViewNote(e, note._id)} 
-                    title="노트 보기"
+                    title={t('shared.actions.view')}
                     $color="primary"
                   >
                     <FaEye />
@@ -638,7 +639,7 @@ const SharedByMeNotes = () => {
                   {note.shared?.shareLink && (
                     <ActionButton 
                       onClick={(e) => handleCopyLink(e, note.shared.shareLink)} 
-                      title="링크 복사"
+                      title={t('shared.actions.copyLink')}
                       $color="success"
                     >
                       <FaCopy />
@@ -648,7 +649,7 @@ const SharedByMeNotes = () => {
                 
                 <SharedBadge>
                   <FaShareAlt />
-                  공유됨
+                  {t('shared.badge')}
                 </SharedBadge>
                 
                 <NoteTitle>{note.title}</NoteTitle>
@@ -658,7 +659,7 @@ const SharedByMeNotes = () => {
                     {note.shared.sharedWith.map((user, index) => (
                       <UserChip key={index}>
                         <FaUser />
-                        {user.username || '사용자'}
+                        {user.username || t('sharedWithMe.sharer')}
                       </UserChip>
                     ))}
                   </SharedWith>
@@ -673,14 +674,14 @@ const SharedByMeNotes = () => {
                     onClick={(e) => handleCopyLink(e, note.shared.shareLink)}
                     icon={<FaLink />}
                   >
-                    공유 링크 복사
+                    {t('shared.actions.copyLink')}
                   </ShareLinkButton>
                 )}
                 
                 <NoteFooter>
                   <NoteType $isVoice={note.isVoice}>
                     {note.isVoice ? <FaMicrophone /> : <FaStickyNote />}
-                    {note.isVoice ? '음성' : '텍스트'}
+                    {t(`notes.types.${note.isVoice ? 'voice' : 'text'}`)}
                   </NoteType>
                   <DateDisplay>
                     <FaClock />
@@ -696,10 +697,10 @@ const SharedByMeNotes = () => {
               <FaShareAlt />
             </div>
             <div className="text">
-              아직 공유한 노트가 없습니다.
+              {t('shared.empty.title')}
             </div>
             <BackButton onClick={() => navigate('/notes')} icon={<FaStickyNote />}>
-              노트 목록으로 이동
+              {t('shared.empty.button')}
             </BackButton>
           </EmptyState>
         )}
