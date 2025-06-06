@@ -46,13 +46,10 @@ exports.uploadSpeechFile = async (req, res) => {
     
     console.log('Transcribe 작업 생성 결과:', transcribeResult);
     
-    // DB에 변환 작업 정보 저장
+    // DB에 변환 작업 정보 저장 (실제 테이블 구조에 맞게)
     console.log('DB에 변환 작업 정보 저장 시도...');
     try {
       const transcriptionId = await TranscriptionModel.createTranscriptionJob({
-        userId: req.user.id,
-        filename: req.file.originalname,
-        fileUrl,
         jobId: transcribeResult.jobId,
         status: transcribeResult.status
       });
