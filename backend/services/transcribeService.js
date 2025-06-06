@@ -44,7 +44,7 @@ const startTranscriptionJob = async (audioUrl, params = {}) => {
   }
 };
 
-// 음성 변환 작업 상태 확인
+// 음성 변환 작업 상태 확인 (단순화된 버전)
 const getTranscriptionJob = async (jobId) => {
   console.log('Transcribe 작업 상태 확인 서비스 시작, 작업 ID:', jobId);
   
@@ -60,8 +60,7 @@ const getTranscriptionJob = async (jobId) => {
       createdAt: job.CreationTime,
       completedAt: job.CompletionTime,
       transcript: job.Transcript ? '있음' : '없음',
-      transcriptUri: job.Transcript?.TranscriptFileUri ? '있음' : '없음',
-      transcriptObject: job.Transcript ? JSON.stringify(job.Transcript) : '없음'
+      transcriptUri: job.Transcript?.TranscriptFileUri ? '있음' : '없음'
     });
     
     // 진행률 계산
@@ -77,52 +76,17 @@ const getTranscriptionJob = async (jobId) => {
       progress = 0;
     }
     
-    // TranscriptFileUri 확인 - 더 강력한 감지
+    // 간단한 Transcript URL 확인 (옛날 방식으로 복원)
     let transcriptUrl = null;
-    
-    // 1차: 정상적인 완료 상태 확인
     if (job.TranscriptionJobStatus === 'COMPLETED' && job.Transcript && job.Transcript.TranscriptFileUri) {
       transcriptUrl = job.Transcript.TranscriptFileUri;
-      console.log('정상 완료 - TranscriptFileUri 확인됨:', transcriptUrl);
-    } 
-    // 2차: 상태와 관계없이 TranscriptFileUri가 있으면 완료된 것으로 처리
-    else if (job.Transcript && job.Transcript.TranscriptFileUri) {
-      transcriptUrl = job.Transcript.TranscriptFileUri;
-      progress = 100;
-      console.log('상태 무관 - TranscriptFileUri 존재하므로 완료로 처리:', transcriptUrl);
-    }
-    // 3차: progress가 95% 이상이고 transcript 객체가 있으면 잠시 후 재시도하라는 신호
-    else if (progress >= 95 && job.Transcript) {
-      console.log('95% 이상 진행 + transcript 객체 존재 - 곧 완료될 예정');
-      // 아직 URL이 없으므로 IN_PROGRESS 유지
-    }
-    // 4차: 강제로 다시 한 번 확인 (AWS Transcribe 버그 대응)
-    else if (progress >= 95) {
-      console.log('진행률 95% 이상 - 강제 재확인 필요');
-      try {
-        // 잠시 기다린 후 다시 확인
-        console.log('1초 대기 후 재확인...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        const retryResult = await transcribeService.getTranscriptionJob({
-          TranscriptionJobName: jobId
-        }).promise();
-        
-        const retryJob = retryResult.TranscriptionJob;
-        if (retryJob.Transcript && retryJob.Transcript.TranscriptFileUri) {
-          transcriptUrl = retryJob.Transcript.TranscriptFileUri;
-          progress = 100;
-          console.log('재확인 성공 - TranscriptFileUri 발견:', transcriptUrl);
-        }
-      } catch (retryError) {
-        console.error('재확인 중 오류:', retryError);
-      }
+      console.log('Transcript URL 확인됨:', transcriptUrl);
     }
     
     const response = {
       jobId: job.TranscriptionJobName,
-      status: transcriptUrl ? 'COMPLETED' : job.TranscriptionJobStatus, // TranscriptFileUri가 있으면 완료로 처리
-      progress: transcriptUrl ? 100 : progress,
+      status: job.TranscriptionJobStatus,
+      progress: progress,
       url: transcriptUrl,
       createdAt: job.CreationTime,
       completedAt: job.CompletionTime
