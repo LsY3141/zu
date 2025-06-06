@@ -7,7 +7,7 @@ const transcriptionModel = require('../models/transcriptionModel');
 const NoteModel = require('../models/noteModel');
 const db = require('../config/db');
 
-// 음성 파일 업로드
+// 음성 파일 업로드 (수정됨 - DB 저장 정보 추가)
 exports.uploadSpeechFile = async (req, res) => {
   console.log('음성 파일 업로드 컨트롤러 시작');
   try {
@@ -46,10 +46,13 @@ exports.uploadSpeechFile = async (req, res) => {
     
     console.log('Transcribe 작업 생성 결과:', transcribeResult);
     
-    // DB에 변환 작업 정보 저장 (실제 테이블 구조에 맞게)
+    // DB에 변환 작업 정보 저장 (수정됨 - 파일 정보 포함)
     console.log('DB에 변환 작업 정보 저장 시도...');
     try {
       const transcriptionId = await transcriptionModel.createTranscriptionJob({
+        userId: req.user.id,                    // 추가
+        filename: req.file.originalname,        // 추가
+        fileUrl: fileUrl,                       // 추가 (S3 URL)
         jobId: transcribeResult.jobId,
         status: transcribeResult.status
       });
@@ -353,7 +356,7 @@ exports.translateTranscription = async (req, res) => {
   }
 };
 
-// 변환 결과를 노트로 저장
+// 변환 결과를 노트로 저장 (수정됨 - S3 키 처리 개선)
 exports.saveTranscriptionAsNote = async (req, res) => {
   console.log('노트 저장 컨트롤러 시작');
   try {
@@ -383,8 +386,45 @@ exports.saveTranscriptionAsNote = async (req, res) => {
       });
     }
     
-    // S3에서 서명된 URL로 오디오 파일에 접근할 수 있는 경로 생성
-    const audioUrl = await s3Service.getSignedUrl(transcription.file_key || transcription.file_url, 24 * 60 * 60);
+    console.log('찾은 변환 작업 정보:', {
+      id: transcription.id,
+      filename: transcription.filename,
+      file_url: transcription.file_url,
+      job_id: transcription.job_id
+    });
+    
+    // S3 URL에서 키 추출하여 서명된 URL 생성
+    let audioUrl = null;
+    try {
+      if (transcription.file_url) {
+        // S3 URL에서 키 추출 (s3://bucket-name/key 형식에서 key 부분만)
+        let s3Key = null;
+        
+        if (transcription.file_url.startsWith('s3://')) {
+          // s3://capstone-educate-s3/1/1733479154352-abc123.wav 형식
+          const urlParts = transcription.file_url.replace('s3://capstone-educate-s3/', '');
+          s3Key = urlParts;
+          console.log('S3 URL에서 추출한 키:', s3Key);
+        } else if (transcription.file_url.startsWith('https://')) {
+          // https://capstone-educate-s3.s3.amazonaws.com/1/123-abc.wav 형식
+          const url = new URL(transcription.file_url);
+          s3Key = url.pathname.substring(1); // 앞의 '/' 제거
+          console.log('HTTPS URL에서 추출한 키:', s3Key);
+        }
+        
+        if (s3Key) {
+          audioUrl = await s3Service.getSignedUrl(s3Key, 24 * 60 * 60);
+          console.log('서명된 URL 생성 성공');
+        } else {
+          console.log('S3 키를 추출할 수 없음, audioUrl을 null로 설정');
+        }
+      } else {
+        console.log('file_url이 없어서 audioUrl을 null로 설정');
+      }
+    } catch (s3Error) {
+      console.error('S3 URL 생성 실패, audioUrl을 null로 설정:', s3Error.message);
+      audioUrl = null;
+    }
     
     // 노트 데이터 구성
     const noteData = {
@@ -393,19 +433,25 @@ exports.saveTranscriptionAsNote = async (req, res) => {
       content,
       category: category || '기본',
       isVoice: true,
-      audioUrl,
-      transcription: {
-        id: transcription.id,
-        jobId: transcription.job_id
-      }
+      audioUrl, // 성공하면 서명된 URL, 실패하면 null
     };
+    
+    console.log('노트 데이터 구성 완료:', {
+      userId: noteData.userId,
+      title: noteData.title,
+      category: noteData.category,
+      isVoice: noteData.isVoice,
+      hasAudioUrl: !!noteData.audioUrl
+    });
     
     // 노트 생성
     const noteId = await NoteModel.createNote(noteData);
+    console.log('노트 생성 완료, ID:', noteId);
     
     // 태그 처리
     if (tags.length > 0) {
       await NoteModel.addTagsToNote(noteId, tags);
+      console.log('태그 추가 완료:', tags);
     }
     
     // 노트와 변환 작업 연결
@@ -413,12 +459,14 @@ exports.saveTranscriptionAsNote = async (req, res) => {
       'UPDATE transcriptions SET note_id = ? WHERE id = ?',
       [noteId, transcription.id]
     );
+    console.log('변환 작업과 노트 연결 완료');
     
     // 사용자의 통계 업데이트 (노트 수 증가)
     await db.query(
       'UPDATE users SET total_notes = total_notes + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
       [req.user.id]
     );
+    console.log('사용자 통계 업데이트 완료');
     
     // 음성 처리 시간 계산 및 사용자 통계 업데이트
     const audioDuration = calculateAudioDuration(transcription);
@@ -439,6 +487,7 @@ exports.saveTranscriptionAsNote = async (req, res) => {
            updated_at = CURRENT_TIMESTAMP`,
         [req.user.id, yearMonth, audioDuration / 60, audioDuration / 60]
       );
+      console.log('월간 통계 업데이트 완료');
     }
     
     console.log('노트 저장 완료, DB 업데이트됨');
