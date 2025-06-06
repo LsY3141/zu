@@ -1,4 +1,4 @@
-﻿const db = require('../config/db');
+const db = require('../config/db');
 const bcrypt = require('bcrypt');
 
 // 사용자 모델 함수
@@ -111,7 +111,7 @@ const updateUsageStats = async (id, statsData) => {
   const yearMonth = new Date().toISOString().slice(0, 7); // YYYY-MM 형식
   
   const monthlySql = `
-    INSERT INTO monthly_usage (user_id, year_month, notes_count, speech_minutes)
+    INSERT INTO monthly_usage (user_id, \`year_month\`, notes_count, speech_minutes)
     VALUES (?, ?, ?, ?)
     ON DUPLICATE KEY UPDATE 
       notes_count = notes_count + ?,
