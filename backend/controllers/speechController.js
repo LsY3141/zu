@@ -184,7 +184,7 @@ exports.analyzeTranscription = async (req, res) => {
     console.log('분석 옵션:', { summary, keyPhrases });
     
     // 변환 작업 정보 가져오기
-    const transcription = await TranscriptionModel.getTranscriptionByJobId(transcriptionId);
+    const transcription = await transcriptionModel.getTranscriptionByJobId(transcriptionId);
     
     if (!transcription) {
       console.error('변환 작업을 찾을 수 없음');
@@ -241,7 +241,7 @@ exports.analyzeTranscription = async (req, res) => {
       
       // 새 핵심 문구 저장
       if (phrases.length > 0) {
-        await TranscriptionModel.saveKeyPhrases(transcription.id, phrases);
+        await transcriptionModel.saveKeyPhrases(transcription.id, phrases);
       }
       console.log('DB에 핵심 문구 저장됨');
     }
@@ -283,7 +283,7 @@ exports.translateTranscription = async (req, res) => {
     }
     
     // 변환 작업 정보 가져오기
-    const transcription = await TranscriptionModel.getTranscriptionByJobId(transcriptionId);
+    const transcription = await transcriptionModel.getTranscriptionByJobId(transcriptionId);
     
     if (!transcription) {
       console.error('변환 작업을 찾을 수 없음');
@@ -331,7 +331,7 @@ exports.translateTranscription = async (req, res) => {
       });
       
       // 번역 결과 저장
-      await TranscriptionModel.saveTranslation(
+      await transcriptionModel.saveTranslation(
         transcription.id,
         targetLanguage,
         translatedText
@@ -378,7 +378,7 @@ exports.saveTranscriptionAsNote = async (req, res) => {
     }
     
     // 변환 작업 정보 가져오기
-    const transcription = await TranscriptionModel.getTranscriptionByJobId(transcriptionId);
+    const transcription = await transcriptionModel.getTranscriptionByJobId(transcriptionId);
     
     if (!transcription) {
       console.error('변환 작업을 찾을 수 없음');
