@@ -90,7 +90,7 @@ exports.uploadSpeechFile = async (req, res) => {
   }
 };
 
-// 변환 작업 상태 확인
+// 변환 작업 상태 확인 (단순화된 버전)
 exports.checkTranscriptionStatus = async (req, res) => {
   console.log('변환 작업 상태 확인 컨트롤러 시작');
   try {
@@ -121,8 +121,8 @@ exports.checkTranscriptionStatus = async (req, res) => {
       results: null
     };
     
-    // 작업이 완료되었으면 결과 가져오기 (더 강력한 감지)
-    if ((jobStatus.status === 'COMPLETED' || jobStatus.progress >= 100) && jobStatus.url) {
+    // 작업이 완료되었으면 결과 가져오기 (단순화된 조건)
+    if (jobStatus.status === 'COMPLETED' && jobStatus.url) {
       console.log('작업 완료됨, 결과 가져오기 시도:', jobStatus.url);
       try {
         const results = await transcribeService.getTranscriptionResults(jobStatus.url);
@@ -153,11 +153,6 @@ exports.checkTranscriptionStatus = async (req, res) => {
         response.job.status = 'COMPLETED';
         response.job.progress = 100;
       }
-    } else if (jobStatus.progress >= 95 && !jobStatus.url) {
-      // URL이 없지만 95% 이상이면 잠시 후 다시 확인하라는 의미
-      console.log('진행률 95% 이상이지만 URL 없음 - 계속 대기');
-      response.job.status = 'IN_PROGRESS';
-      response.job.progress = 95;
     }
     
     console.log('최종 응답:', response);
@@ -507,7 +502,9 @@ exports.getSpeechHistory = async (req, res) => {
       FROM transcriptions t
       LEFT JOIN transcription_results tr ON t.id = tr.transcription_id
       LEFT JOIN notes n ON t.note_id = n.id
-      WHERE t.user_id = ?
+      WHERE EXISTS (
+        SELECT 1 FROM notes n2 WHERE n2.id = t.note_id AND n2.user_id = ?
+      ) OR t.note_id IS NULL
       ORDER BY t.created_at DESC
     `;
     
