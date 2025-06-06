@@ -3,7 +3,7 @@ const s3Service = require('../services/s3Service');
 const transcribeService = require('../services/transcribeService');
 const comprehendService = require('../services/comprehendService');
 const translateService = require('../services/translateService');
-const TranscriptionModel = require('../models/transcriptionModel');
+const transcriptionModel = require('../models/transcriptionModel');
 const NoteModel = require('../models/noteModel');
 const db = require('../config/db');
 
@@ -49,7 +49,7 @@ exports.uploadSpeechFile = async (req, res) => {
     // DB에 변환 작업 정보 저장 (실제 테이블 구조에 맞게)
     console.log('DB에 변환 작업 정보 저장 시도...');
     try {
-      const transcriptionId = await TranscriptionModel.createTranscriptionJob({
+      const transcriptionId = await transcriptionModel.createTranscriptionJob({
         jobId: transcribeResult.jobId,
         status: transcribeResult.status
       });
@@ -102,10 +102,10 @@ exports.checkTranscriptionStatus = async (req, res) => {
     console.log('조회된 작업 상태:', jobStatus);
     
     // DB에서 변환 작업 정보 가져오기
-    const transcription = await TranscriptionModel.getTranscriptionByJobId(jobId);
+    const transcription = await transcriptionModel.getTranscriptionByJobId(jobId);
     if (transcription) {
       // DB의 상태 업데이트
-      await TranscriptionModel.updateTranscriptionStatus(jobId, jobStatus.status, jobStatus.progress);
+      await transcriptionModel.updateTranscriptionStatus(jobId, jobStatus.status, jobStatus.progress);
     }
     
     // 응답 객체 구성
@@ -132,14 +132,14 @@ exports.checkTranscriptionStatus = async (req, res) => {
         
         // DB에 변환 결과 저장
         if (transcription && results.text) {
-          await TranscriptionModel.saveTranscriptionResults(transcription.id, {
+          await transcriptionModel.saveTranscriptionResults(transcription.id, {
             text: results.text,
             summary: null
           });
           
           // 화자 구분 결과 저장
           if (results.speakers && results.speakers.length > 0) {
-            await TranscriptionModel.saveSpeakerSegments(transcription.id, results.speakers);
+            await transcriptionModel.saveSpeakerSegments(transcription.id, results.speakers);
           }
         }
         
