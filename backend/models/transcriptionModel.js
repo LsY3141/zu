@@ -1,17 +1,17 @@
 const db = require('../config/db');
 
-// 변환 작업 생성 (실제 테이블 구조에 맞게)
+// 변환 작업 생성 (수정됨 - userId, filename, fileUrl 추가)
 const createTranscriptionJob = async (data) => {
-  const { jobId, status = 'IN_PROGRESS' } = data;
+  const { userId, filename, fileUrl, jobId, status = 'PENDING' } = data;
   
   const sql = `
     INSERT INTO transcriptions 
-    (job_id, status, progress, created_at, updated_at) 
-    VALUES (?, ?, 0, NOW(), NOW())
+    (user_id, filename, file_url, job_id, status) 
+    VALUES (?, ?, ?, ?, ?)
   `;
   
   try {
-    const result = await db.query(sql, [jobId, status]);
+    const result = await db.query(sql, [userId, filename, fileUrl, jobId, status]);
     console.log('transcriptionModel.createTranscriptionJob 성공:', result.insertId);
     return result.insertId;
   } catch (error) {
@@ -24,7 +24,7 @@ const createTranscriptionJob = async (data) => {
 const updateTranscriptionStatus = async (jobId, status, progress = 0) => {
   const sql = `
     UPDATE transcriptions 
-    SET status = ?, progress = ?, updated_at = NOW()
+    SET status = ?, progress = ?, updated_at = CURRENT_TIMESTAMP
     WHERE job_id = ?
   `;
   
@@ -72,29 +72,24 @@ const saveTranscriptionResults = async (transcriptionId, data) => {
   }
 };
 
-// 화자 구분 저장
+// 화자 구분 저장 (수정됨 - SQL 구문 오류 해결)
 const saveSpeakerSegments = async (transcriptionId, speakers) => {
   if (!speakers || speakers.length === 0) {
     console.log('transcriptionModel.saveSpeakerSegments: 저장할 화자 구분 데이터가 없습니다.');
     return true;
   }
 
+  // 개별 INSERT로 변경 (MySQL 호환성)
   const sql = `
     INSERT INTO speaker_segments
     (transcription_id, speaker_id, text, created_at)
-    VALUES ?
+    VALUES (?, ?, ?, NOW())
   `;
   
   try {
-    // speakers 배열을 SQL 벌크 삽입 형식으로 변환
-    const values = speakers.map(speaker => [
-      transcriptionId,
-      speaker.id,
-      speaker.text,
-      new Date()
-    ]);
-    
-    const result = await db.query(sql, [values]);
+    for (const speaker of speakers) {
+      await db.query(sql, [transcriptionId, speaker.id, speaker.text]);
+    }
     console.log('transcriptionModel.saveSpeakerSegments 성공:', speakers.length, '개 화자 데이터 저장');
     return true;
   } catch (error) {
@@ -103,28 +98,24 @@ const saveSpeakerSegments = async (transcriptionId, speakers) => {
   }
 };
 
-// 핵심 문구 저장
+// 핵심 문구 저장 (수정됨 - SQL 구문 오류 해결)
 const saveKeyPhrases = async (transcriptionId, phrases) => {
   if (!phrases || phrases.length === 0) {
     console.log('transcriptionModel.saveKeyPhrases: 저장할 핵심 문구가 없습니다.');
     return true;
   }
 
+  // 개별 INSERT로 변경 (MySQL 호환성)
   const sql = `
     INSERT INTO key_phrases
     (transcription_id, phrase, created_at)
-    VALUES ?
+    VALUES (?, ?, NOW())
   `;
   
   try {
-    // phrases 배열을 SQL 벌크 삽입 형식으로 변환
-    const values = phrases.map(phrase => [
-      transcriptionId,
-      phrase,
-      new Date()
-    ]);
-    
-    const result = await db.query(sql, [values]);
+    for (const phrase of phrases) {
+      await db.query(sql, [transcriptionId, phrase]);
+    }
     console.log('transcriptionModel.saveKeyPhrases 성공:', phrases.length, '개 핵심 문구 저장');
     return true;
   } catch (error) {
