@@ -121,12 +121,14 @@ exports.checkTranscriptionStatus = async (req, res) => {
       results: null
     };
     
-    // 작업이 완료되었으면 결과 가져오기
-    if (jobStatus.status === 'COMPLETED' && jobStatus.url) {
+    // 작업이 완료되었으면 결과 가져오기 (transcript가 있으면 완료된 것으로 간주)
+    if ((jobStatus.status === 'COMPLETED' || jobStatus.progress >= 95) && jobStatus.url) {
       console.log('작업 완료됨, 결과 가져오기 시도:', jobStatus.url);
       try {
         const results = await transcribeService.getTranscriptionResults(jobStatus.url);
         response.results = results;
+        response.job.status = 'COMPLETED';
+        response.job.progress = 100;
         
         // DB에 변환 결과 저장
         if (transcription && results.text) {
@@ -151,6 +153,11 @@ exports.checkTranscriptionStatus = async (req, res) => {
         response.job.status = 'COMPLETED';
         response.job.progress = 100;
       }
+    } else if (jobStatus.progress >= 95) {
+      // progress가 95% 이상이면 완료로 간주
+      console.log('진행률 95% 이상 - 완료로 처리');
+      response.job.status = 'COMPLETED';
+      response.job.progress = 100;
     }
     
     console.log('최종 응답:', response);
