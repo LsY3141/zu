@@ -121,8 +121,8 @@ exports.checkTranscriptionStatus = async (req, res) => {
       results: null
     };
     
-    // 작업이 완료되었으면 결과 가져오기 (transcript가 있으면 완료된 것으로 간주)
-    if ((jobStatus.status === 'COMPLETED' || jobStatus.progress >= 95) && jobStatus.url) {
+    // 작업이 완료되었으면 결과 가져오기 (더 강력한 감지)
+    if ((jobStatus.status === 'COMPLETED' || jobStatus.progress >= 100) && jobStatus.url) {
       console.log('작업 완료됨, 결과 가져오기 시도:', jobStatus.url);
       try {
         const results = await transcribeService.getTranscriptionResults(jobStatus.url);
@@ -153,11 +153,11 @@ exports.checkTranscriptionStatus = async (req, res) => {
         response.job.status = 'COMPLETED';
         response.job.progress = 100;
       }
-    } else if (jobStatus.progress >= 95) {
-      // progress가 95% 이상이면 완료로 간주
-      console.log('진행률 95% 이상 - 완료로 처리');
-      response.job.status = 'COMPLETED';
-      response.job.progress = 100;
+    } else if (jobStatus.progress >= 95 && !jobStatus.url) {
+      // URL이 없지만 95% 이상이면 잠시 후 다시 확인하라는 의미
+      console.log('진행률 95% 이상이지만 URL 없음 - 계속 대기');
+      response.job.status = 'IN_PROGRESS';
+      response.job.progress = 95;
     }
     
     console.log('최종 응답:', response);
