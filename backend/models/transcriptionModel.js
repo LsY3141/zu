@@ -1,17 +1,17 @@
 const db = require('../config/db');
 
-// 변환 작업 생성
+// 변환 작업 생성 (실제 테이블 구조에 맞게)
 const createTranscriptionJob = async (data) => {
-  const { userId, filename, fileUrl, jobId, status = 'PENDING' } = data;
+  const { jobId, status = 'IN_PROGRESS' } = data;
   
   const sql = `
     INSERT INTO transcriptions 
-    (user_id, filename, file_url, job_id, status) 
-    VALUES (?, ?, ?, ?, ?)
+    (job_id, status, progress, created_at, updated_at) 
+    VALUES (?, ?, 0, NOW(), NOW())
   `;
   
   try {
-    const result = await db.query(sql, [userId, filename, fileUrl, jobId, status]);
+    const result = await db.query(sql, [jobId, status]);
     return result.insertId;
   } catch (error) {
     throw error;
@@ -22,7 +22,7 @@ const createTranscriptionJob = async (data) => {
 const updateTranscriptionStatus = async (jobId, status, progress = 0) => {
   const sql = `
     UPDATE transcriptions 
-    SET status = ?, progress = ?, updated_at = CURRENT_TIMESTAMP
+    SET status = ?, progress = ?, updated_at = NOW()
     WHERE job_id = ?
   `;
   
@@ -52,8 +52,8 @@ const saveTranscriptionResults = async (transcriptionId, data) => {
   
   const sql = `
     INSERT INTO transcription_results
-    (transcription_id, text, summary)
-    VALUES (?, ?, ?)
+    (transcription_id, text, summary, created_at)
+    VALUES (?, ?, ?, NOW())
   `;
   
   try {
@@ -69,7 +69,7 @@ const saveSpeakerSegments = async (transcriptionId, speakers) => {
   // 여러 화자 정보를 한 번에 삽입하기 위한 벌크 쿼리
   const sql = `
     INSERT INTO speaker_segments
-    (transcription_id, speaker_id, text)
+    (transcription_id, speaker_id, text, created_at)
     VALUES ?
   `;
   
@@ -78,7 +78,8 @@ const saveSpeakerSegments = async (transcriptionId, speakers) => {
     const values = speakers.map(speaker => [
       transcriptionId,
       speaker.id,
-      speaker.text
+      speaker.text,
+      new Date()
     ]);
     
     await db.query(sql, [values]);
@@ -93,7 +94,7 @@ const saveKeyPhrases = async (transcriptionId, phrases) => {
   // 여러 문구를 한 번에 삽입하기 위한 벌크 쿼리
   const sql = `
     INSERT INTO key_phrases
-    (transcription_id, phrase)
+    (transcription_id, phrase, created_at)
     VALUES ?
   `;
   
@@ -101,7 +102,8 @@ const saveKeyPhrases = async (transcriptionId, phrases) => {
     // phrases 배열을 SQL 벌크 삽입 형식으로 변환
     const values = phrases.map(phrase => [
       transcriptionId,
-      phrase
+      phrase,
+      new Date()
     ]);
     
     await db.query(sql, [values]);
@@ -115,8 +117,8 @@ const saveKeyPhrases = async (transcriptionId, phrases) => {
 const saveTranslation = async (transcriptionId, language, text) => {
   const sql = `
     INSERT INTO translations
-    (transcription_id, language, text)
-    VALUES (?, ?, ?)
+    (transcription_id, language, text, created_at)
+    VALUES (?, ?, ?, NOW())
   `;
   
   try {
