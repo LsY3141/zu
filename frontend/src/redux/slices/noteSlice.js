@@ -1,16 +1,19 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import noteApi from '../../api/noteApi';
 
-// 노트 목록 불러오기
+// 노트 목록 불러오기 - isDeleted 파라미터 처리 개선
 export const fetchNotes = createAsyncThunk(
   'notes/fetchNotes',
   async (params, { rejectWithValue }) => {
     try {
+      console.log('fetchNotes 요청 파라미터:', params);
       const response = await noteApi.getNotes(params);
       console.log('fetchNotes 응답:', response);
+      
       return {
         notes: response.notes || [],
-        total: response.total || 0
+        total: response.total || 0,
+        isDeleted: params?.isDeleted || false  // isDeleted 플래그 추가
       };
     } catch (error) {
       return rejectWithValue(error.response?.data || { message: '노트 목록 불러오기 실패' });
@@ -180,7 +183,7 @@ const noteSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // 노트 목록 불러오기
+      // 노트 목록 불러오기 - 휴지통 처리 개선
       .addCase(fetchNotes.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -188,7 +191,16 @@ const noteSlice = createSlice({
       .addCase(fetchNotes.fulfilled, (state, action) => {
         console.log('fetchNotes.fulfilled 액션:', action.payload);
         state.loading = false;
-        state.notes = action.payload.notes;
+        
+        // isDeleted가 true면 trash에 저장, false면 notes에 저장
+        if (action.payload.isDeleted) {
+          console.log('휴지통 노트 업데이트:', action.payload.notes.length);
+          state.trash = action.payload.notes;
+        } else {
+          console.log('일반 노트 업데이트:', action.payload.notes.length);
+          state.notes = action.payload.notes;
+        }
+        
         state.pagination.total = action.payload.total;
       })
       .addCase(fetchNotes.rejected, (state, action) => {
@@ -294,7 +306,7 @@ const noteSlice = createSlice({
         state.error = action.payload?.message || '노트 삭제 실패';
       })
       
-      // 노트 영구 삭제
+      // 노트 영구 삭제 - trash에서 제거
       .addCase(deleteNote.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -302,6 +314,7 @@ const noteSlice = createSlice({
       .addCase(deleteNote.fulfilled, (state, action) => {
         console.log('deleteNote.fulfilled 액션:', action.payload);
         state.loading = false;
+        // trash 배열에서 해당 노트 제거
         state.trash = state.trash.filter(note => note._id !== action.payload.id);
         state.message = '노트가 영구적으로 삭제되었습니다.';
       })
@@ -310,7 +323,7 @@ const noteSlice = createSlice({
         state.error = action.payload?.message || '노트 영구 삭제 실패';
       })
       
-      // 노트 복원 - 백엔드 응답보다 로컬 원본 날짜 우선
+      // 노트 복원 - trash에서 제거하고 notes에 추가
       .addCase(restoreNote.pending, (state) => {
         state.loading = true;
         state.error = null;

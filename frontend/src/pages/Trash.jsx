@@ -17,12 +17,12 @@ import {
   FaHistory,
   FaShieldAlt
 } from 'react-icons/fa';
-import { fetchNotes } from '../redux/slices/noteSlice';
+import { fetchNotes, restoreNote, deleteNote } from '../redux/slices/noteSlice';
 import Button from '../components/shared/Button';
 import Spinner from '../components/shared/Spinner';
 import Alert from '../components/shared/Alert';
 import { formatRelativeTime } from '../utils/formatters';
-import useNotes from '../hooks/useNotes';
+import { openConfirmDialog } from '../redux/slices/uiSlice';
 
 // Colors - 메인페이지와 동일한 컬러 팔레트
 const colors = {
@@ -684,16 +684,89 @@ const EmptyState = styled.div`
 
 const Trash = () => {
   const navigate = useNavigate();
-  const { notes, loading, error, handleRestoreNote, handleDeletePermanently } = useNotes(true);
+  const dispatch = useDispatch();
+  
+  // Redux 상태 직접 사용
+  const { trash, loading, error } = useSelector(state => state.notes);
+  
+  // 컴포넌트 마운트 시 휴지통 노트들 가져오기
+  useEffect(() => {
+    console.log('Trash 컴포넌트 마운트됨 - 삭제된 노트 조회 시작');
+    dispatch(fetchNotes({ 
+      isDeleted: true,  // 삭제된 노트만 가져오기
+      page: 1,
+      limit: 100
+    }));
+  }, [dispatch]);
+
+  // 휴지통에서 사용할 노트 데이터
+  const notes = trash || [];
+  
+  console.log('휴지통 렌더링:', {
+    notesLength: notes.length,
+    loading,
+    error
+  });
   
   const handleNoteRestore = (noteId, title) => {
     console.log('복원 버튼 클릭:', { noteId, title });
-    handleRestoreNote(noteId);
+    
+    const confirmAction = () => {
+      console.log('노트 복원 확인됨:', noteId);
+      dispatch(restoreNote(noteId))
+        .unwrap()
+        .then(() => {
+          console.log('노트 복원 성공:', noteId);
+          // 복원 후 휴지통 목록 새로고침
+          dispatch(fetchNotes({ 
+            isDeleted: true,
+            page: 1,
+            limit: 100
+          }));
+        })
+        .catch((error) => {
+          console.error('노트 복원 실패:', error);
+        });
+    };
+    
+    dispatch(openConfirmDialog({
+      title: '노트 복원',
+      message: '선택한 노트를 복원하시겠습니까?',
+      confirmText: '복원',
+      cancelText: '취소',
+      onConfirm: confirmAction,
+    }));
   };
   
   const handleNoteDelete = (noteId, title) => {
     console.log('영구 삭제 버튼 클릭:', { noteId, title });
-    handleDeletePermanently(noteId);
+    
+    const confirmAction = () => {
+      console.log('노트 영구 삭제 확인됨:', noteId);
+      dispatch(deleteNote(noteId))
+        .unwrap()
+        .then(() => {
+          console.log('노트 영구 삭제 성공:', noteId);
+          // 삭제 후 휴지통 목록 새로고침
+          dispatch(fetchNotes({ 
+            isDeleted: true,
+            page: 1,
+            limit: 100
+          }));
+        })
+        .catch((error) => {
+          console.error('노트 영구 삭제 실패:', error);
+        });
+    };
+    
+    dispatch(openConfirmDialog({
+      title: '노트 영구 삭제',
+      message: '선택한 노트를 영구적으로 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+      confirmText: '영구 삭제',
+      cancelText: '취소',
+      onConfirm: confirmAction,
+      danger: true
+    }));
   };
   
   if (loading) {

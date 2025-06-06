@@ -468,7 +468,6 @@ const DividerOr = styled.div`
   span {
     position: relative;
     z-index: 2;
-    background: ${colors.white};
     padding: 0 25px;
     color: ${colors.darkGray};
     font-weight: 600;
@@ -1294,7 +1293,7 @@ const VoiceUpload = () => {
             </SectionCard>
             
             <DividerOr>
-              <span>또는</span>
+              <span></span>
             </DividerOr>
             
             <SectionCard>
@@ -1324,7 +1323,12 @@ const VoiceUpload = () => {
                   htmlFor="file-upload"
                   icon={<FaUpload />}
                   disabled={loading}
-                  style={{ pointerEvents: 'none' }}
+                  style={{ 
+                    pointerEvents: 'none',
+                    minWidth: '100px',
+                    padding: '12px 24px',
+                    color: 'white'
+                  }}
                 >
                   파일 선택
                 </ActionButton>

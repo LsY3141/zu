@@ -142,9 +142,9 @@ const getNotes = async (userId, options = {}) => {
   }
 };
 
-// noteModel.js - getNoteById 함수 수정
-const getNoteById = async (id, userId) => {
-  const sql = `
+// noteModel.js - getNoteById 함수 수정 (includeDeleted 매개변수 추가)
+const getNoteById = async (id, userId, includeDeleted = false) => {
+  let sql = `
     SELECT n.*, 
       DATE_FORMAT(CONVERT_TZ(n.created_at, @@session.time_zone, '+09:00'), '%Y-%m-%d %H:%i:%s') as created_at_formatted,
       DATE_FORMAT(CONVERT_TZ(n.updated_at, @@session.time_zone, '+09:00'), '%Y-%m-%d %H:%i:%s') as updated_at_formatted,
@@ -165,8 +165,12 @@ const getNoteById = async (id, userId) => {
           WHERE sn.note_id = n.id AND sn.shared_with = ?
         )
       )
-      AND n.is_deleted = 0
   `;
+  
+  // includeDeleted가 false일 때만 삭제된 노트 제외
+  if (!includeDeleted) {
+    sql += ` AND n.is_deleted = 0`;
+  }
   
   try {
     const notes = await db.query(sql, [userId, userId, id, userId, userId]);

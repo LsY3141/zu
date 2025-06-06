@@ -848,13 +848,6 @@ const SharedWithMeNotes = () => {
                   >
                     <FaEye />
                   </ActionButton>
-                  <ActionButton 
-                    variant="like"
-                    onClick={(e) => handleLikeNote(e, note._id)} 
-                    title="좋아요"
-                  >
-                    <FaHeart />
-                  </ActionButton>
                 </ActionButtons>
                 
                 <CardContent className="card-content">

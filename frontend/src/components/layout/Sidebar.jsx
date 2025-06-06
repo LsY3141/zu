@@ -52,6 +52,13 @@ const LogoContainer = styled.div`
   border-bottom: 1px solid rgba(255,255,255,0.1);
   margin-bottom: 8px;
   position: relative;
+  cursor: pointer; /* 클릭 가능 표시 */
+  transition: all 0.3s ease; /* 호버 효과를 위한 트랜지션 */
+  
+  &:hover {
+    background: rgba(255,255,255,0.1); /* 호버 시 배경 변경 */
+    transform: translateX(2px); /* 살짝 오른쪽으로 이동 */
+  }
   
   &::after {
     content: '';
@@ -295,9 +302,14 @@ const Sidebar = () => {
     navigate('/voice');
   };
   
+  // 로고 클릭 시 홈으로 이동하는 함수
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+  
   return (
     <SidebarContainer>
-      <LogoContainer>
+      <LogoContainer onClick={handleLogoClick}>
         <Logo>AI</Logo>
         <LogoText>
           <LogoTitle>AI 학습 지원</LogoTitle>

@@ -25,7 +25,7 @@ const useNotes = (isTrash = false, isShared = false) => {
   
   const [displayedNotes, setDisplayedNotes] = useState([]);
   
-  // 노트 목록 불러오기
+  // 노트 목록 불러오기 - isDeleted 파라미터 명시적 전달
   useEffect(() => {
     if (isShared) {
       console.log('공유 노트 가져오기 요청');
@@ -35,30 +35,34 @@ const useNotes = (isTrash = false, isShared = false) => {
         filters, 
         page: pagination.page, 
         limit: pagination.limit,
-        isDeleted: isTrash 
+        isDeleted: isTrash  // isTrash를 isDeleted로 명시적 전달
       });
       dispatch(fetchNotes({ 
         ...filters, 
         page: pagination.page, 
         limit: pagination.limit,
-        isDeleted: isTrash
+        isDeleted: isTrash  // 중요: 휴지통 여부를 명시적으로 전달
       }));
     }
   }, [dispatch, filters, pagination.page, pagination.limit, isTrash, isShared]);
   
-  // 표시할 노트 설정
+  // 표시할 노트 설정 - 로깅 추가
   useEffect(() => {
     console.log('노트 데이터 변경됨:', { 
       notes: notes.length, 
       sharedNotes: sharedNotes.length, 
-      trash: trash.length 
+      trash: trash.length,
+      isTrash,
+      isShared
     });
     
     if (isShared) {
       setDisplayedNotes(sharedNotes);
     } else if (isTrash) {
+      console.log('휴지통 모드 - trash 데이터 사용:', trash.length);
       setDisplayedNotes(trash);
     } else {
+      console.log('일반 모드 - notes 데이터 사용:', notes.length);
       setDisplayedNotes(notes);
     }
   }, [notes, sharedNotes, trash, isTrash, isShared]);

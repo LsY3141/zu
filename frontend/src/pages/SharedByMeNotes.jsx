@@ -616,10 +616,6 @@ const SharedByMeNotes = () => {
                 <div className="number">{totalSharedUsers}</div>
                 <div className="label">공유받은 사용자</div>
               </StatItem>
-              <StatItem>
-                <div className="number">{totalSharedLinks}</div>
-                <div className="label">공유 링크</div>
-              </StatItem>
             </StatsGrid>
           </StatsSection>
         )}

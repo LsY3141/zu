@@ -220,7 +220,7 @@ exports.getNoteById = async (req, res) => {
   }
 };
 
-// noteController.js - 노트 수정 함수 권한 체크 추가
+// 노트 수정 함수 권한 체크 추가
 exports.updateNote = async (req, res) => {
   try {
     const { id } = req.params;
@@ -281,7 +281,7 @@ exports.updateNote = async (req, res) => {
   }
 };
 
-// 노트 삭제 함수도 마찬가지로 수정
+// 노트 삭제 (휴지통으로 이동)
 exports.moveNoteToTrash = async (req, res) => {
   try {
     const { id } = req.params;
@@ -330,13 +330,13 @@ exports.moveNoteToTrash = async (req, res) => {
   }
 };
 
-// 노트 영구 삭제
+// 노트 영구 삭제 - includeDeleted 옵션 추가
 exports.deleteNotePermanently = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // 노트 존재 여부 및 소유권 확인
-    const existingNote = await NoteModel.getNoteById(id, req.user.id);
+    // 삭제된 노트도 포함해서 조회 (includeDeleted = true)
+    const existingNote = await NoteModel.getNoteById(id, req.user.id, true);
     
     if (!existingNote) {
       return res.status(404).json({
@@ -358,7 +358,7 @@ exports.deleteNotePermanently = async (req, res) => {
     res.status(200).json({
       success: true,
       message: '노트가 영구적으로 삭제되었습니다.',
-      id: existingNote.id.toString() // MongoDB 스타일로 변환하여 제공
+      id: existingNote.id.toString()
     });
   } catch (error) {
     console.error('노트 영구 삭제 오류:', error);
@@ -370,13 +370,13 @@ exports.deleteNotePermanently = async (req, res) => {
   }
 };
 
-// 노트 복원 - 완전한 날짜 보존
+// 노트 복원 - includeDeleted 옵션 추가
 exports.restoreNote = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // 복원 전 노트 정보 확인
-    const existingNote = await NoteModel.getNoteById(id, req.user.id);
+    // 삭제된 노트도 포함해서 조회 (includeDeleted = true)
+    const existingNote = await NoteModel.getNoteById(id, req.user.id, true);
     
     if (!existingNote) {
       return res.status(404).json({
@@ -396,8 +396,8 @@ exports.restoreNote = async (req, res) => {
     // 노트 복원 (원본 created_at, updated_at 완전 보존)
     await NoteModel.restoreNote(id);
     
-    // 복원된 노트 조회 - 원본 날짜가 그대로 유지되어야 함
-    const restoredNote = await NoteModel.getNoteById(id, req.user.id);
+    // 복원된 노트 조회 - 이제는 일반 조회 (includeDeleted = false)
+    const restoredNote = await NoteModel.getNoteById(id, req.user.id, false);
     
     // MySQL 결과를 프론트엔드 형식에 맞게 변환
     const formattedNote = {
@@ -408,8 +408,8 @@ exports.restoreNote = async (req, res) => {
       isVoice: restoredNote.is_voice === 1,
       audioUrl: restoredNote.audio_url,
       tags: restoredNote.tags || [],
-      createdAt: restoredNote.created_at, // 원본 생성일 완전 보존 (DB에 이미 한국 시간)
-      updatedAt: restoredNote.updated_at  // 원본 수정일 완전 보존 (DB에 이미 한국 시간)
+      createdAt: restoredNote.created_at,
+      updatedAt: restoredNote.updated_at
     };
     
     console.log('노트 복원 완료 - 원본 날짜 완전 보존됨');

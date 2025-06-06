@@ -363,10 +363,6 @@ const Header = () => {
       </SearchContainer>
       
       <RightSection>
-        <NotificationButton hasNotification={true} title="알림">
-          <FaBell />
-        </NotificationButton>
-        
         <ActionButton onClick={handleToggleCalendar} title="캘린더 토글">
           <FaCalendarAlt />
         </ActionButton>

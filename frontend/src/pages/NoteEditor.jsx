@@ -653,16 +653,7 @@ const NoteEditor = ({ isEdit }) => {
             </div>
           </TitleSection>
           
-          <HeaderActions>
-            <ActionButton 
-              className="back-button"
-              size="small" 
-              onClick={handleCancel}
-              icon={<FaArrowLeft />}
-            >
-              뒤로 가기
-            </ActionButton>
-            
+          <HeaderActions> 
             <ActionButton 
               className="cancel-button"
               variant="outline" 
@@ -818,15 +809,15 @@ const NoteEditor = ({ isEdit }) => {
                 <div className="tip">
                   <FaKeyboard />
                   <div>
-                    <strong>단축키:</strong><br />
-                    Ctrl+S로 빠르게 저장할 수 있습니다.
+                    <strong>카테고리</strong><br />
+                    카테고리를 이용하여 노트를 검색할 수 있어요.
                   </div>
                 </div>
                 
                 <div className="tip">
                   <FaTag />
                   <div>
-                    <strong>태그 활용:</strong><br />
+                    <strong>태그 활용</strong><br />
                     관련 키워드를 태그로 추가하면 나중에 쉽게 찾을 수 있어요.
                   </div>
                 </div>
@@ -834,8 +825,8 @@ const NoteEditor = ({ isEdit }) => {
                 <div className="tip">
                   <FaFileAlt />
                   <div>
-                    <strong>마크다운 지원:</strong><br />
-                    **굵게**, *기울임*, `코드` 등의 문법을 사용할 수 있습니다.
+                    <strong>노트 이용</strong><br />
+                    노트의 내용을 자유롭게 채워서 저장하기를 누르면 사용할 수 있어요.
                   </div>
                 </div>
               </HelpSection>
