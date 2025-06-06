@@ -45,7 +45,6 @@ const startTranscriptionJob = async (audioUrl, params = {}) => {
 };
 
 // 음성 변환 작업 상태 확인
-
 const getTranscriptionJob = async (jobId) => {
   console.log('Transcribe 작업 상태 확인 서비스 시작, 작업 ID:', jobId);
   
@@ -60,7 +59,9 @@ const getTranscriptionJob = async (jobId) => {
       status: job.TranscriptionJobStatus,
       createdAt: job.CreationTime,
       completedAt: job.CompletionTime,
-      transcript: job.Transcript ? '있음' : '없음'
+      transcript: job.Transcript ? '있음' : '없음',
+      transcriptUri: job.Transcript?.TranscriptFileUri ? '있음' : '없음',
+      transcriptObject: job.Transcript ? JSON.stringify(job.Transcript) : '없음'
     });
     
     // 진행률 계산
@@ -76,17 +77,22 @@ const getTranscriptionJob = async (jobId) => {
       progress = 0;
     }
     
-    // Transcript URL 확인
+    // TranscriptFileUri 확인 - 중요한 수정사항
     let transcriptUrl = null;
     if (job.TranscriptionJobStatus === 'COMPLETED' && job.Transcript && job.Transcript.TranscriptFileUri) {
       transcriptUrl = job.Transcript.TranscriptFileUri;
-      console.log('Transcript URL 확인됨:', transcriptUrl);
+      console.log('TranscriptFileUri 확인됨:', transcriptUrl);
+    } else if (job.Transcript && job.Transcript.TranscriptFileUri) {
+      // 상태가 IN_PROGRESS여도 TranscriptFileUri가 있으면 실제로는 완료된 것
+      transcriptUrl = job.Transcript.TranscriptFileUri;
+      progress = 100;
+      console.log('상태는 IN_PROGRESS이지만 TranscriptFileUri 존재 - 완료로 처리:', transcriptUrl);
     }
     
     const response = {
       jobId: job.TranscriptionJobName,
-      status: job.TranscriptionJobStatus,
-      progress: progress,
+      status: transcriptUrl ? 'COMPLETED' : job.TranscriptionJobStatus, // TranscriptFileUri가 있으면 완료로 처리
+      progress: transcriptUrl ? 100 : progress,
       url: transcriptUrl,
       createdAt: job.CreationTime,
       completedAt: job.CompletionTime
