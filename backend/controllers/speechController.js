@@ -479,12 +479,12 @@ exports.saveTranscriptionAsNote = async (req, res) => {
       // 월간 통계 업데이트
       const yearMonth = new Date().toISOString().slice(0, 7); // YYYY-MM 형식
       await db.query(
-        `INSERT INTO monthly_usage (user_id, year_month, notes_count, speech_minutes)
-         VALUES (?, ?, 1, ?)
-         ON DUPLICATE KEY UPDATE 
-           notes_count = notes_count + 1,
-           speech_minutes = speech_minutes + ?,
-           updated_at = CURRENT_TIMESTAMP`,
+        `INSERT INTO monthly_usage (user_id, \`year_month\`, notes_count, speech_minutes)
+        VALUES (?, ?, 1, ?)
+        ON DUPLICATE KEY UPDATE 
+          notes_count = notes_count + 1,
+          speech_minutes = speech_minutes + ?,
+          updated_at = CURRENT_TIMESTAMP`,
         [req.user.id, yearMonth, audioDuration / 60, audioDuration / 60]
       );
       console.log('월간 통계 업데이트 완료');
