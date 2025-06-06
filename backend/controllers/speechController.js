@@ -3,6 +3,8 @@ const s3Service = require('../services/s3Service');
 const transcribeService = require('../services/transcribeService');
 const comprehendService = require('../services/comprehendService');
 const translateService = require('../services/translateService');
+const TranscriptionModel = require('../models/transcriptionModel');
+const NoteModel = require('../models/noteModel');
 const db = require('../config/db');
 
 // 음성 파일 업로드
@@ -47,8 +49,6 @@ exports.uploadSpeechFile = async (req, res) => {
     // DB에 변환 작업 정보 저장
     console.log('DB에 변환 작업 정보 저장 시도...');
     try {
-      // 이 부분은 실제 DB 연동이 되어 있으면 사용, 아니면 주석 처리
-      /*
       const transcriptionId = await TranscriptionModel.createTranscriptionJob({
         userId: req.user.id,
         filename: req.file.originalname,
@@ -57,10 +57,14 @@ exports.uploadSpeechFile = async (req, res) => {
         status: transcribeResult.status
       });
       console.log('DB에 변환 작업 정보 저장 성공, ID:', transcriptionId);
-      */
     } catch (dbError) {
       console.error('DB 저장 오류:', dbError);
-      // DB 오류는 무시하고 진행 (테스트 목적)
+      // DB 오류 시 에러 응답 반환
+      return res.status(500).json({
+        success: false,
+        message: 'DB 저장 중 오류가 발생했습니다.',
+        error: dbError.message
+      });
     }
     
     console.log('파일 업로드 및 Transcribe 작업 생성 완료');
@@ -90,7 +94,6 @@ exports.uploadSpeechFile = async (req, res) => {
 };
 
 // 변환 작업 상태 확인
-
 exports.checkTranscriptionStatus = async (req, res) => {
   console.log('변환 작업 상태 확인 컨트롤러 시작');
   try {
@@ -100,6 +103,13 @@ exports.checkTranscriptionStatus = async (req, res) => {
     // AWS Transcribe 작업 상태 확인
     const jobStatus = await transcribeService.getTranscriptionJob(jobId);
     console.log('조회된 작업 상태:', jobStatus);
+    
+    // DB에서 변환 작업 정보 가져오기
+    const transcription = await TranscriptionModel.getTranscriptionByJobId(jobId);
+    if (transcription) {
+      // DB의 상태 업데이트
+      await TranscriptionModel.updateTranscriptionStatus(jobId, jobStatus.status, jobStatus.progress);
+    }
     
     // 응답 객체 구성
     const response = {
@@ -120,7 +130,21 @@ exports.checkTranscriptionStatus = async (req, res) => {
       try {
         const results = await transcribeService.getTranscriptionResults(jobStatus.url);
         response.results = results;
-        console.log('변환 결과 가져오기 성공:', {
+        
+        // DB에 변환 결과 저장
+        if (transcription && results.text) {
+          await TranscriptionModel.saveTranscriptionResults(transcription.id, {
+            text: results.text,
+            summary: null
+          });
+          
+          // 화자 구분 결과 저장
+          if (results.speakers && results.speakers.length > 0) {
+            await TranscriptionModel.saveSpeakerSegments(transcription.id, results.speakers);
+          }
+        }
+        
+        console.log('변환 결과 가져오기 및 DB 저장 성공:', {
           textLength: results.text ? results.text.length : 0,
           speakersCount: results.speakers ? results.speakers.length : 0
         });
@@ -155,11 +179,7 @@ exports.analyzeTranscription = async (req, res) => {
     console.log('분석할 변환 ID:', transcriptionId);
     console.log('분석 옵션:', { summary, keyPhrases });
     
-    // 테스트를 위한 임시 텍스트 (실제로는 DB에서 가져와야 함)
-    const text = "이것은 음성 텍스트 변환 결과입니다. AWS Transcribe 서비스로 변환된 텍스트를 AWS Comprehend 서비스로 분석하고, AWS Translate 서비스로 번역할 수 있습니다. 이 기능을 통해 음성 노트를 텍스트로 변환하고, 중요한 개념을 추출하며, 필요한 경우 다른 언어로 번역할 수 있습니다.";
-    
-    // 변환 작업 정보 가져오기 (실제 DB 연동 시 사용)
-    /*
+    // 변환 작업 정보 가져오기
     const transcription = await TranscriptionModel.getTranscriptionByJobId(transcriptionId);
     
     if (!transcription) {
@@ -185,8 +205,6 @@ exports.analyzeTranscription = async (req, res) => {
     }
     
     const text = transcriptionResults[0].text;
-    */
-    
     const analysis = {};
     
     // 텍스트 요약
@@ -196,14 +214,12 @@ exports.analyzeTranscription = async (req, res) => {
       analysis.summary = summaryText;
       console.log('요약 생성 완료:', summaryText);
       
-      // DB에 요약 결과 업데이트 (실제 DB 연동 시 사용)
-      /*
+      // DB에 요약 결과 업데이트
       await db.query(
         'UPDATE transcription_results SET summary = ? WHERE id = ?',
         [summaryText, transcriptionResults[0].id]
       );
       console.log('DB에 요약 저장됨');
-      */
     }
     
     // 핵심 문구 추출
@@ -213,8 +229,6 @@ exports.analyzeTranscription = async (req, res) => {
       analysis.keyPhrases = phrases;
       console.log('핵심 문구 추출 완료:', phrases);
       
-      // DB에 핵심 문구 저장 (실제 DB 연동 시 사용)
-      /*
       // 기존 핵심 문구 삭제
       await db.query(
         'DELETE FROM key_phrases WHERE transcription_id = ?',
@@ -226,7 +240,6 @@ exports.analyzeTranscription = async (req, res) => {
         await TranscriptionModel.saveKeyPhrases(transcription.id, phrases);
       }
       console.log('DB에 핵심 문구 저장됨');
-      */
     }
     
     console.log('텍스트 분석 완료, 응답 전송');
@@ -265,11 +278,7 @@ exports.translateTranscription = async (req, res) => {
       });
     }
     
-    // 테스트를 위한 임시 텍스트 (실제로는 DB에서 가져와야 함)
-    const text = "이것은 음성 텍스트 변환 결과입니다. AWS Transcribe 서비스로 변환된 텍스트를 AWS Comprehend 서비스로 분석하고, AWS Translate 서비스로 번역할 수 있습니다. 이 기능을 통해 음성 노트를 텍스트로 변환하고, 중요한 개념을 추출하며, 필요한 경우 다른 언어로 번역할 수 있습니다.";
-    
-    // 변환 작업 정보 가져오기 (실제 DB 연동 시 사용)
-    /*
+    // 변환 작업 정보 가져오기
     const transcription = await TranscriptionModel.getTranscriptionByJobId(transcriptionId);
     
     if (!transcription) {
@@ -301,12 +310,8 @@ exports.translateTranscription = async (req, res) => {
       'SELECT * FROM translations WHERE transcription_id = ? AND language = ?',
       [transcription.id, targetLanguage]
     );
-    */
     
     let translatedText;
-    
-    // 테스트: 이미 번역된 결과가 없다고 가정
-    const existingTranslation = [];
     
     if (existingTranslation.length > 0) {
       console.log('기존 번역 결과 사용');
@@ -321,15 +326,13 @@ exports.translateTranscription = async (req, res) => {
         translatedTextLength: translatedText.length
       });
       
-      // 번역 결과 저장 (실제 DB 연동 시 사용)
-      /*
+      // 번역 결과 저장
       await TranscriptionModel.saveTranslation(
         transcription.id,
         targetLanguage,
         translatedText
       );
       console.log('DB에 번역 결과 저장됨');
-      */
     }
     
     console.log('텍스트 번역 완료, 응답 전송');
@@ -370,16 +373,6 @@ exports.saveTranscriptionAsNote = async (req, res) => {
       });
     }
     
-    // 테스트를 위한 임시 응답 (실제로는 DB 연동 필요)
-    console.log('노트 저장 완료 (테스트 모드)');
-    res.status(201).json({
-      success: true,
-      message: '음성 노트가 성공적으로 저장되었습니다.',
-      noteId: uuidv4() // 테스트용 임시 ID
-    });
-    
-    // 실제 DB 연동 시 사용할 코드
-    /*
     // 변환 작업 정보 가져오기
     const transcription = await TranscriptionModel.getTranscriptionByJobId(transcriptionId);
     
@@ -392,7 +385,7 @@ exports.saveTranscriptionAsNote = async (req, res) => {
     }
     
     // S3에서 서명된 URL로 오디오 파일에 접근할 수 있는 경로 생성
-    const audioUrl = await s3Service.getSignedUrl(transcription.file_url, 24 * 60 * 60);
+    const audioUrl = await s3Service.getSignedUrl(transcription.file_key || transcription.file_url, 24 * 60 * 60);
     
     // 노트 데이터 구성
     const noteData = {
@@ -455,7 +448,6 @@ exports.saveTranscriptionAsNote = async (req, res) => {
       message: '음성 노트가 성공적으로 저장되었습니다.',
       noteId
     });
-    */
   } catch (error) {
     console.error('노트 저장 오류:', error);
     console.error('오류 스택:', error.stack);
@@ -506,41 +498,17 @@ exports.getSpeechHistory = async (req, res) => {
     const userId = req.user.id;
     console.log('사용자 ID:', userId);
     
-    // 테스트를 위한 임시 데이터
-    const history = [
-      {
-        id: 1,
-        job_id: 'job-123456789',
-        status: 'COMPLETED',
-        created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7일 전
-        text: '이것은 테스트 음성 변환 결과입니다.',
-        summary: '테스트 요약입니다.'
-      },
-      {
-        id: 2,
-        job_id: 'job-987654321',
-        status: 'COMPLETED',
-        created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2일 전
-        text: '두 번째 테스트 음성 변환 결과입니다.',
-        summary: '두 번째 테스트 요약입니다.'
-      }
-    ];
-    
-    console.log('테스트 히스토리 생성됨:', history.length, '개 항목');
-    
-    // 실제 DB 연동 시 사용할 코드
-    /*
     const sql = `
-      SELECT t.*, tr.text, tr.summary
+      SELECT t.*, tr.text, tr.summary, n.title as note_title
       FROM transcriptions t
       LEFT JOIN transcription_results tr ON t.id = tr.transcription_id
+      LEFT JOIN notes n ON t.note_id = n.id
       WHERE t.user_id = ?
       ORDER BY t.created_at DESC
     `;
     
     const history = await db.query(sql, [userId]);
     console.log('DB에서 히스토리 조회됨:', history.length, '개 항목');
-    */
     
     console.log('음성 변환 히스토리 조회 완료, 응답 전송');
     res.status(200).json({
