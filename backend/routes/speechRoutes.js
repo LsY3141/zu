@@ -28,7 +28,7 @@ router.post('/analyze/:transcriptionId', logRequest, protect, speechController.a
 router.post('/translate/:transcriptionId', logRequest, protect, speechController.translateTranscription);
 
 // 변환 결과를 노트로 저장
-router.post('/save-as-note/:transcriptionId', logRequest, protect, speechController.saveTranscriptionAsNote);
+router.post('/create-note', logRequest, protect, speechController.saveTranscriptionAsNote); // 경로 변경: /save-as-note/:transcriptionId -> /create-note (createNoteFromTranscription 액션과 일치)
 
 // 음성 변환 작업 히스토리 조회
 router.get('/history', logRequest, protect, speechController.getSpeechHistory);

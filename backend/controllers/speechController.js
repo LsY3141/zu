@@ -121,22 +121,24 @@ exports.checkTranscriptionStatus = async (req, res) => {
         createdAt: jobStatus.createdAt,
         completedAt: jobStatus.completedAt
       },
-      results: null
+      results: null // 초기에는 null
     };
     
-    // 작업이 완료되었으면 결과 가져오기 (단순화된 조건)
-    if (jobStatus.status === 'COMPLETED' && jobStatus.url) {
+    // 작업이 완료되었으면 결과 가져오기
+    if (jobStatus.status === 'COMPLETED' && jobStatus.url) { // jobStatus.url이 null이 아니어야 함
       console.log('작업 완료됨, 결과 가져오기 시도:', jobStatus.url);
       try {
         const results = await transcribeService.getTranscriptionResults(jobStatus.url);
-        response.results = results;
-        response.job.status = 'COMPLETED';
-        response.job.progress = 100;
+        response.results = results; // 여기에 파싱된 전체 텍스트와 화자 정보가 담겨야 함
+        response.job.status = 'COMPLETED'; // 상태 최종 확정
+        response.job.progress = 100; // 진행률 100으로 확정
         
-        // DB에 변환 결과 저장
-        if (transcription && results.text) {
+        // DB에 변환 결과 저장 (transcription.id와 results.text가 존재해야 함)
+        if (transcription && results?.text) { // results?.text 안전한 접근
+          // transcriptionModel.saveTranscriptionResults가 text와 summary를 저장
           await transcriptionModel.saveTranscriptionResults(transcription.id, {
             text: results.text,
+            // summary는 나중에 analyzeTranscription에서 업데이트되므로 여기서는 null 유지
             summary: null
           });
           
@@ -152,9 +154,10 @@ exports.checkTranscriptionStatus = async (req, res) => {
         });
       } catch (resultError) {
         console.error('결과 가져오기 오류:', resultError);
-        // 결과 가져오기 실패해도 완료 상태는 전달
+        // 결과 가져오기 실패해도 완료 상태는 전달, 대신 results는 null
         response.job.status = 'COMPLETED';
         response.job.progress = 100;
+        response.results = null; // 오류 발생 시 results는 null로 유지
       }
     }
     
@@ -342,7 +345,7 @@ exports.translateTranscription = async (req, res) => {
       success: true,
       message: '텍스트 번역이 완료되었습니다.',
       targetLanguage,
-      translation: translatedText
+      translation: translatedText // 프론트엔드 speechSlice와 일치하도록 'translation' 필드 사용
     });
   } catch (error) {
     console.error('텍스트 번역 오류:', error);

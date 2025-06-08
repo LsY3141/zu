@@ -1,5 +1,7 @@
 const { transcribeService } = require('../config/s3');
 const { v4: uuidv4 } = require('uuid');
+const https = require('https'); // https 모듈 추가
+const url = require('url'); // url 모듈 추가
 
 // 음성 변환 작업 시작
 const startTranscriptionJob = async (audioUrl, params = {}) => {
@@ -60,7 +62,7 @@ const getTranscriptionJob = async (jobId) => {
       createdAt: job.CreationTime,
       completedAt: job.CompletionTime,
       transcript: job.Transcript ? '있음' : '없음',
-      transcriptUri: job.Transcript?.TranscriptFileUri ? '있음' : '없음'
+      transcriptUri: job.Transcript?.TranscriptFileUri ? '있음' : '없음' // 안전한 접근
     });
     
     // 진행률 계산
@@ -78,7 +80,7 @@ const getTranscriptionJob = async (jobId) => {
     
     // 간단한 Transcript URL 확인 (옛날 방식으로 복원)
     let transcriptUrl = null;
-    if (job.TranscriptionJobStatus === 'COMPLETED' && job.Transcript && job.Transcript.TranscriptFileUri) {
+    if (job.TranscriptionJobStatus === 'COMPLETED' && job.Transcript?.TranscriptFileUri) { // 옵셔널 체이닝 추가
       transcriptUrl = job.Transcript.TranscriptFileUri;
       console.log('Transcript URL 확인됨:', transcriptUrl);
     }
@@ -87,7 +89,7 @@ const getTranscriptionJob = async (jobId) => {
       jobId: job.TranscriptionJobName,
       status: job.TranscriptionJobStatus,
       progress: progress,
-      url: transcriptUrl,
+      url: transcriptUrl, // 여기에 결과 URL이 올바르게 포함되어야 합니다.
       createdAt: job.CreationTime,
       completedAt: job.CompletionTime
     };
@@ -107,9 +109,7 @@ const getTranscriptionResults = async (uri) => {
   console.log('결과 URI:', uri);
   
   return new Promise((resolve, reject) => {
-    const https = require('https');
-    const url = require('url');
-    
+    // https, url 모듈은 이미 상단에 임포트됨
     console.log('HTTPS 요청 시작');
     const parsedUrl = url.parse(uri);
     
