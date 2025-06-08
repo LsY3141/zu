@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; // useRef 임포트
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -310,6 +310,7 @@ const HiddenFileInput = styled.input`
   display: none;
 `;
 
+// $progress prop으로 변경하여 DOM으로 전달되지 않도록 함
 const ProgressBar = styled.div`
   width: 100%;
   height: 8px;
@@ -322,7 +323,7 @@ const ProgressBar = styled.div`
     content: '';
     display: block;
     height: 100%;
-    width: ${props => props.progress}%;
+    width: ${props => props.$progress}%; // $progress로 변경
     background: linear-gradient(90deg, ${colors.primary}, ${colors.primaryLight || '#4dabf7'});
     transition: width 0.3s ease;
     border-radius: 4px;
@@ -417,9 +418,11 @@ const VoiceUpload = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [audioBlob, setAudioBlob] = useState(null); // 현재 사용되지 않음
   const [isDragging, setIsDragging] = useState(false);
-  const [statusCheckInterval, setStatusCheckInterval] = useState(null);
-  const [checkingStatus, setCheckingStatus] = useState(false);
   const [fileUploadProgress, setFileUploadProgress] = useState(0);
+
+  // useRef를 사용하여 setInterval ID 관리:
+  // useEffect 의존성 배열에 넣지 않고도 값을 유지하고 클리어할 수 있게 합니다.
+  const statusCheckIntervalRef = useRef(null);
 
   // 옵션 선택 상태
   const [processingOptions, setProcessingOptions] = useState({
@@ -436,15 +439,17 @@ const VoiceUpload = () => {
     tags: []
   });
 
-  // 컴포넌트 마운트/언마운트 시 상태 초기화
+  // 컴포넌트 마운트/언마운트 시 상태 초기화 및 인터벌 정리
   useEffect(() => {
     return () => {
       dispatch(resetSpeechState());
-      if (statusCheckInterval) {
-        clearInterval(statusCheckInterval);
+      // 컴포넌트 언마운트 시에만 인터벌 확실히 정리
+      if (statusCheckIntervalRef.current) {
+        clearInterval(statusCheckIntervalRef.current);
+        statusCheckIntervalRef.current = null;
       }
     };
-  }, [dispatch, statusCheckInterval]);
+  }, [dispatch]); // dispatch만 의존성으로 유지
 
   // 옵션 토글 핸들러
   const handleOptionToggle = (option) => {
@@ -579,34 +584,45 @@ const VoiceUpload = () => {
     }
   }, [analysisResults, translationResults, activeStep, processingOptions, transcriptionResults]);
 
-  // 트랜스크립션 상태 체크
+  // 트랜스크립션 상태 체크 로직 (주요 수정 부분)
   useEffect(() => {
-    // transcriptionJob과 그 id가 유효하고, 진행 중인 상태일 때만 인터벌 시작
+    // console.log('useEffect (상태 체크) 실행됨:', {
+    //   transcriptionJobId: transcriptionJob?.id,
+    //   transcriptionJobStatus: transcriptionJob?.status,
+    //   activeStep: activeStep,
+    //   currentIntervalRef: statusCheckIntervalRef.current // useRef 값 확인
+    // });
+
+    // 조건: job ID가 있고, 진행 중이며, 현재 3단계일 때
     if (transcriptionJob?.id && transcriptionJob.status === 'IN_PROGRESS' && activeStep === 3) {
-      if (!checkingStatus) {
-        setCheckingStatus(true);
-        const interval = setInterval(() => {
+      // 이미 인터벌이 실행 중이 아니라면 새로 시작
+      if (!statusCheckIntervalRef.current) { // useRef 값으로 체크
+        // console.log('상태 확인 인터벌 시작 조건 충족. 새로운 인터벌 시작!');
+        statusCheckIntervalRef.current = setInterval(() => {
+          // console.log('checkTranscriptionStatus 디스패치됨:', transcriptionJob.id);
           dispatch(checkTranscriptionStatus(transcriptionJob.id));
-        }, 3000);
-        setStatusCheckInterval(interval);
+        }, 3000); // 3초 간격
       }
-    } else if (transcriptionJob?.id &&
-               (transcriptionJob.status === 'COMPLETED' ||
-                transcriptionJob.status === 'FAILED')) {
-      // 작업이 완료되거나 실패하면 인터벌 클리어
-      setCheckingStatus(false);
-      if (statusCheckInterval) {
-        clearInterval(statusCheckInterval);
-        setStatusCheckInterval(null);
+    } else { // job이 완료되었거나 실패했거나, 3단계가 아닐 때
+      // 기존 인터벌이 있다면 클리어
+      if (statusCheckIntervalRef.current) {
+        // console.log('인터벌 클리어됨. (완료/실패/단계 변경)');
+        clearInterval(statusCheckIntervalRef.current);
+        statusCheckIntervalRef.current = null;
       }
     }
-    // 클린업 함수는 컴포넌트 언마운트나 의존성 변경 시 인터벌을 정리
+
+    // 클린업 함수: 이펙트가 재실행되거나 컴포넌트가 언마운트될 때 기존 인터벌 정리
     return () => {
-      if (statusCheckInterval) {
-        clearInterval(statusCheckInterval);
+      // console.log('useEffect (상태 체크) 클린업 실행됨');
+      if (statusCheckIntervalRef.current) { // 클린업 시에도 useRef 사용
+        clearInterval(statusCheckIntervalRef.current);
+        statusCheckIntervalRef.current = null;
       }
     };
-  }, [transcriptionJob?.status, checkingStatus, dispatch, activeStep, transcriptionJob?.id]);
+    // 의존성 배열 최소화: dispatch는 stable guarantee, useRef는 의존성 아님.
+    // transcriptionJob의 변경만으로 재실행되도록. activeStep도 명시적으로.
+  }, [transcriptionJob?.status, transcriptionJob?.id, activeStep, dispatch]);
 
 
   // 메시지 알림 처리 (성공 메시지는 노트 저장 시 별도로 처리)
@@ -772,8 +788,9 @@ const VoiceUpload = () => {
               </div>
 
               {loading && fileUploadProgress > 0 && (
-                <ProgressBar progress={fileUploadProgress} />
+                <ProgressBar $progress={fileUploadProgress} />
               )}
+
 
               <ActionButton
                 onClick={handleFileUpload}

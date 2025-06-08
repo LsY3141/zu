@@ -363,18 +363,18 @@ exports.translateTranscription = async (req, res) => {
 exports.saveTranscriptionAsNote = async (req, res) => {
   console.log('노트 저장 컨트롤러 시작');
   try {
-    const { transcriptionId } = req.params;
-    const { title, content, category, tags = [] } = req.body;
+    // URL 파라미터가 아닌 body에서 transcriptionId 가져오기
+    const { transcriptionId, title, content, category, tags = [] } = req.body;
     
     console.log('저장할 변환 ID:', transcriptionId);
     console.log('노트 데이터:', { title, content, category, tags });
     
-    // 필수 필드 검증
-    if (!title || !content) {
-      console.error('필수 필드 누락');
+    // transcriptionId 필수 검증 추가
+    if (!transcriptionId) {
+      console.error('transcriptionId 누락');
       return res.status(400).json({
         success: false,
-        message: '제목과 내용은 필수 항목입니다.'
+        message: 'transcriptionId는 필수 항목입니다.'
       });
     }
     
