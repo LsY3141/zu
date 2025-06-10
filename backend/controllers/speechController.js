@@ -265,7 +265,9 @@ exports.analyzeTranscription = async (req, res) => {
   }
 };
 
-// 변환된 텍스트 번역
+// speechController.js - translateTranscription 함수 (기존 DB 구조 유지)
+
+// 변환된 텍스트 번역 (기존 DB 구조에 맞게 수정)
 exports.translateTranscription = async (req, res) => {
   console.log('텍스트 번역 컨트롤러 시작');
   try {
@@ -310,42 +312,66 @@ exports.translateTranscription = async (req, res) => {
     
     const text = transcriptionResults[0].text;
     
-    // 이미 번역된 결과가 있는지 확인
+    // 텍스트가 너무 짧은 경우 체크
+    if (!text || text.trim().length < 10) {
+      console.error('번역할 텍스트가 너무 짧음');
+      return res.status(400).json({
+        success: false,
+        message: '번역할 텍스트가 너무 짧습니다.'
+      });
+    }
+    
+    // 이미 번역된 결과가 있는지 확인 (기존 DB 구조 사용)
     const existingTranslation = await db.query(
       'SELECT * FROM translations WHERE transcription_id = ? AND language = ?',
       [transcription.id, targetLanguage]
     );
     
-    let translatedText;
+    let translationResult;
     
     if (existingTranslation.length > 0) {
       console.log('기존 번역 결과 사용');
-      translatedText = existingTranslation[0].text;
+      translationResult = {
+        translatedText: existingTranslation[0].text,
+        sourceLanguage: 'auto', // 기존 DB에 source_language가 없으면 기본값
+        targetLanguage: targetLanguage
+      };
     } else {
       console.log('새 번역 시작');
-      const translationResult = await translateService.translateText(text, targetLanguage);
-      translatedText = translationResult.translatedText;
-      console.log('번역 완료:', {
-        sourceLanguage: translationResult.sourceLanguage,
-        targetLanguage: translationResult.targetLanguage,
-        translatedTextLength: translatedText.length
-      });
-      
-      // 번역 결과 저장
-      await transcriptionModel.saveTranslation(
-        transcription.id,
-        targetLanguage,
-        translatedText
-      );
-      console.log('DB에 번역 결과 저장됨');
+      try {
+        translationResult = await translateService.translateText(text, targetLanguage);
+        console.log('번역 완료:', {
+          sourceLanguage: translationResult.sourceLanguage,
+          targetLanguage: translationResult.targetLanguage,
+          translatedTextLength: translationResult.translatedText.length
+        });
+        
+        // 번역 결과 저장 (기존 DB 구조 사용)
+        await transcriptionModel.saveTranslation(
+          transcription.id,
+          targetLanguage,
+          translationResult.translatedText
+        );
+        console.log('DB에 번역 결과 저장됨');
+      } catch (translationError) {
+        console.error('번역 서비스 오류:', translationError);
+        return res.status(500).json({
+          success: false,
+          message: '번역 중 오류가 발생했습니다. 다시 시도해주세요.',
+          error: translationError.message
+        });
+      }
     }
     
     console.log('텍스트 번역 완료, 응답 전송');
     res.status(200).json({
       success: true,
       message: '텍스트 번역이 완료되었습니다.',
-      targetLanguage,
-      translation: translatedText // 프론트엔드 speechSlice와 일치하도록 'translation' 필드 사용
+      translatedText: translationResult.translatedText,
+      sourceLanguage: translationResult.sourceLanguage,
+      targetLanguage: translationResult.targetLanguage,
+      originalTextLength: text.length,
+      translatedTextLength: translationResult.translatedText.length
     });
   } catch (error) {
     console.error('텍스트 번역 오류:', error);
@@ -358,6 +384,7 @@ exports.translateTranscription = async (req, res) => {
     });
   }
 };
+
 
 // 변환 결과를 노트로 저장 (수정됨 - S3 키 처리 개선)
 exports.saveTranscriptionAsNote = async (req, res) => {

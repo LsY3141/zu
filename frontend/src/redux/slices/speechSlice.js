@@ -26,7 +26,7 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// 음성 파일 업로드 (수정됨 - onUploadProgress 콜백 지원)
+// 음성 파일 업로드
 export const uploadSpeechFile = createAsyncThunk(
   'speech/uploadSpeechFile',
   async ({ formData, onUploadProgress }, { dispatch, rejectWithValue }) => {
@@ -70,7 +70,7 @@ export const analyzeTranscription = createAsyncThunk(
     try {
       const response = await axios.post(
         `${speechUrl}/analyze/${transcriptionId}`,
-        { options },
+        { summary: true, keyPhrases: true },
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
@@ -85,11 +85,13 @@ export const analyzeTranscription = createAsyncThunk(
   }
 );
 
-// 변환된 텍스트 번역
+// 변환된 텍스트 번역 (수정된 버전)
 export const translateTranscription = createAsyncThunk(
   'speech/translateTranscription',
   async ({ transcriptionId, targetLanguage }, { rejectWithValue }) => {
     try {
+      console.log('🌐 번역 요청:', { transcriptionId, targetLanguage });
+      
       const response = await axios.post(
         `${speechUrl}/translate/${transcriptionId}`,
         { targetLanguage },
@@ -100,14 +102,23 @@ export const translateTranscription = createAsyncThunk(
           },
         }
       );
-      return response.data;
+      
+      console.log('🌐 번역 응답:', response.data);
+      
+      return {
+        targetLanguage: targetLanguage,
+        translatedText: response.data.translatedText,
+        sourceLanguage: response.data.sourceLanguage,
+        message: response.data.message
+      };
     } catch (error) {
+      console.error('🌐 번역 오류:', error);
       return rejectWithValue(error.response?.data || { message: '텍스트 번역 실패' });
     }
   }
 );
 
-// 옵션에 따른 처리 (새로 추가)
+// 옵션에 따른 처리
 export const processWithOptions = createAsyncThunk(
   'speech/processWithOptions',
   async ({ transcriptionId, options }, { rejectWithValue }) => {
@@ -129,7 +140,7 @@ export const processWithOptions = createAsyncThunk(
   }
 );
 
-// 변환 결과를 노트로 저장 (기존 함수명 유지하면서 새 엔드포인트 사용)
+// 변환 결과를 노트로 저장
 export const saveTranscriptionAsNote = createAsyncThunk(
   'speech/saveTranscriptionAsNote',
   async ({ transcriptionId, noteData }, { rejectWithValue }) => {
@@ -159,19 +170,16 @@ export const saveTranscriptionAsNote = createAsyncThunk(
   }
 );
 
-// 새로운 노트 생성 함수 (VoiceUpload 컴포넌트용)
+// 새로운 노트 생성 함수
 export const createNoteFromTranscription = createAsyncThunk(
   'speech/createNoteFromTranscription',
-  async ({ transcriptionId, title, content, category, tags }, { rejectWithValue }) => {
+  async ({ transcriptionId, noteData }, { rejectWithValue }) => {
     try {
       const response = await axios.post(
         `${speechUrl}/create-note`,
         {
           transcriptionId,
-          title,
-          content,
-          category,
-          tags
+          ...noteData
         },
         {
           headers: {
@@ -204,7 +212,7 @@ export const getSpeechHistory = createAsyncThunk(
   }
 );
 
-// 초기 상태 (기존 구조 유지하면서 새 필드 추가)
+// 초기 상태 (수정된 버전)
 const initialState = {
   currentFile: null,
   fileUploadProgress: 0,
@@ -214,19 +222,18 @@ const initialState = {
     summary: null,
     keyPhrases: [],
   },
-  translationResults: {},
+  translationResults: {}, // 확실히 빈 객체로 초기화
   history: [],
   loading: false,
   error: null,
   message: null,
-  // 새로 추가된 필드들
   processingOptions: {
     summary: false,
     translation: false,
     targetLanguage: 'en'
   },
   optionProcessingStatus: {
-    summary: 'idle', // 'idle', 'pending', 'completed', 'failed'
+    summary: 'idle',
     translation: 'idle'
   }
 };
@@ -247,7 +254,7 @@ const speechSlice = createSlice({
         summary: null,
         keyPhrases: [],
       };
-      state.translationResults = {};
+      state.translationResults = {}; // 확실히 빈 객체로 초기화
       state.error = null;
       state.message = null;
       state.processingOptions = {
@@ -266,7 +273,6 @@ const speechSlice = createSlice({
     clearSpeechMessage: (state) => {
       state.message = null;
     },
-    // 새로 추가된 액션들
     setProcessingOptions: (state, action) => {
       state.processingOptions = { ...state.processingOptions, ...action.payload };
     },
@@ -305,19 +311,16 @@ const speechSlice = createSlice({
       .addCase(checkTranscriptionStatus.fulfilled, (state, action) => {
         console.log('상태 체크 성공:', action.payload);
         state.loading = false;
-        state.transcriptionJob = action.payload.job; // job 정보 업데이트
+        state.transcriptionJob = action.payload.job;
         
         if (action.payload.job.status === 'COMPLETED') {
-          // 백엔드에서 results가 넘어오면 transcriptionResults를 업데이트
-          if (action.payload.results && action.payload.results.text) { // results 객체와 text 필드 모두 확인
+          if (action.payload.results && action.payload.results.text) {
             console.log('변환 결과 설정:', action.payload.results);
-            state.transcriptionResults = action.payload.results; // 여기에 전체 results 객체 저장
+            state.transcriptionResults = action.payload.results;
             state.message = '음성 변환이 완료되었습니다.';
           } else {
             console.log('변환 완료되었지만 결과 없음');
-            // 결과가 없는데 완료 상태라면 오류 처리 또는 메시지 조정 필요
-            state.message = '음성 변환이 완료되었지만 결과를 가져오지 못했습니다.'; // 메시지 수정
-            // state.error = '음성 변환 결과 가져오기 실패'; // 필요 시 오류로 처리
+            state.message = '음성 변환이 완료되었지만 결과를 가져오지 못했습니다.';
           }
         } else if (action.payload.job.status === 'FAILED') {
           state.error = '음성 변환에 실패했습니다.';
@@ -351,28 +354,49 @@ const speechSlice = createSlice({
         state.optionProcessingStatus.summary = 'failed';
       })
       
-      // 변환된 텍스트 번역
+      // 변환된 텍스트 번역 (수정된 버전)
       .addCase(translateTranscription.pending, (state) => {
         state.loading = true;
         state.error = null;
-        state.optionProcessingStatus.translation = 'pending';
+        if (state.optionProcessingStatus) {
+          state.optionProcessingStatus.translation = 'pending';
+        }
       })
       .addCase(translateTranscription.fulfilled, (state, action) => {
         state.loading = false;
-        state.translationResults = {
-          ...state.translationResults,
-          [action.payload.targetLanguage]: action.payload.translation, // 'text' 대신 'translation' 필드 사용 확인 (백엔드와 일치)
-        };
-        state.message = '텍스트 번역이 완료되었습니다.';
-        state.optionProcessingStatus.translation = 'completed';
+        
+        // translationResults가 객체인지 확인하고 안전하게 할당
+        if (!state.translationResults || typeof state.translationResults !== 'object') {
+          state.translationResults = {};
+        }
+        
+        // 번역 결과 저장 - 수정된 부분
+        state.translationResults[action.payload.targetLanguage] = action.payload.translatedText;
+        
+        state.message = action.payload.message || '텍스트 번역이 완료되었습니다.';
+        
+        if (state.optionProcessingStatus) {
+          state.optionProcessingStatus.translation = 'completed';
+        }
+        
+        console.log('🌐 번역 결과 저장됨:', {
+          targetLanguage: action.payload.targetLanguage,
+          translatedTextLength: action.payload.translatedText?.length,
+          currentTranslationResults: Object.keys(state.translationResults)
+        });
       })
       .addCase(translateTranscription.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload?.message || '텍스트 번역 실패';
-        state.optionProcessingStatus.translation = 'failed';
+        
+        if (state.optionProcessingStatus) {
+          state.optionProcessingStatus.translation = 'failed';
+        }
+        
+        console.error('🌐 번역 실패:', action.payload?.message);
       })
       
-      // 옵션 처리 (새로 추가)
+      // 옵션 처리
       .addCase(processWithOptions.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -406,7 +430,7 @@ const speechSlice = createSlice({
         state.optionProcessingStatus.translation = 'failed';
       })
       
-      // 변환 결과를 노트로 저장 (기존)
+      // 변환 결과를 노트로 저장
       .addCase(saveTranscriptionAsNote.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -420,7 +444,7 @@ const speechSlice = createSlice({
         state.error = action.payload?.message || '노트 저장 실패';
       })
       
-      // 노트 생성 (새로 추가)
+      // 노트 생성
       .addCase(createNoteFromTranscription.pending, (state) => {
         state.loading = true;
         state.error = null;

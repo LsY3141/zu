@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'; // useRef 임포트
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -11,9 +11,13 @@ import {
   FaTrash,
   FaCheck,
   FaLanguage,
-  FaFileAlt, // FaFileText 또는 FaFileTextAlt 대신 FaFileAlt 사용
+  FaFileAlt,
   FaArrowRight,
-  FaArrowLeft
+  FaArrowLeft,
+  FaEdit,
+  FaSave,
+  FaTag,
+  FaPlus
 } from 'react-icons/fa';
 import {
   uploadSpeechFile,
@@ -21,12 +25,11 @@ import {
   checkTranscriptionStatus,
   analyzeTranscription,
   translateTranscription,
-  createNoteFromTranscription // speechSlice.js에 이 이름으로 존재함을 확인
+  createNoteFromTranscription
 } from '../redux/slices/speechSlice';
 import { showNotification } from '../redux/slices/uiSlice';
-import theme from '../styles/theme'; // theme 객체 전체를 임포트
+import theme from '../styles/theme';
 
-// theme 객체에서 colors를 구조 분해 할당
 const { colors } = theme;
 
 // 애니메이션
@@ -44,6 +47,11 @@ const float = keyframes`
 const wave = keyframes`
   0%, 100% { height: 20px; }
   50% { height: 40px; }
+`;
+
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 `;
 
 // 스타일드 컴포넌트들
@@ -92,7 +100,7 @@ const StepConnector = styled.div`
   width: 40px;
   height: 2px;
   background: ${props => props.completed ? colors.primary : colors.lightGray};
-  margin: 0 20px;
+  margin: 0 15px;
   
   @media (max-width: 768px) {
     width: 20px;
@@ -104,259 +112,152 @@ const SectionCard = styled.div`
   background: white;
   border-radius: 20px;
   padding: 40px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  margin-bottom: 30px;
-  position: relative;
-  overflow: hidden;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: -50px;
-    right: -50px;
-    width: 100px;
-    height: 100px;
-    background: ${colors.primary};
-    opacity: 0.05;
-    border-radius: 50%;
-    animation: ${float} 4s ease-in-out infinite;
-  }
-  
-  @media (max-width: 768px) {
-    padding: 20px;
-  }
-`;
-
-// 옵션 선택 카드 스타일
-const OptionsCard = styled.div`
-  background: white;
-  border-radius: 20px;
-  padding: 40px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   margin-bottom: 30px;
   
   @media (max-width: 768px) {
     padding: 20px;
-  }
-`;
-
-const OptionsTitle = styled.h2`
-  color: ${colors.darkGray};
-  margin-bottom: 30px;
-  text-align: center;
-  font-size: 1.8rem;
-  font-weight: bold;
-  
-  @media (max-width: 768px) {
-    font-size: 1.5rem;
     margin-bottom: 20px;
   }
 `;
 
-const OptionItem = styled.div`
-  display: flex;
-  align-items: center;
-  padding: 20px;
-  border: 2px solid ${props => props.selected ? colors.primary : colors.lightGray};
-  border-radius: 12px;
-  margin-bottom: 15px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: ${props => props.selected ? colors.primary + '10' : 'white'};
-  
-  &:hover {
-    border-color: ${colors.primary};
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  }
-  
-  @media (max-width: 768px) {
-    padding: 15px;
-    flex-direction: column;
-    align-items: flex-start;
-  }
-`;
-
-const OptionCheckbox = styled.div`
-  width: 24px;
-  height: 24px;
-  border: 2px solid ${props => props.checked ? colors.primary : colors.lightGray};
-  border-radius: 6px;
-  margin-right: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: ${props => props.checked ? colors.primary : 'white'};
-  color: white;
-  font-size: 14px;
-  flex-shrink: 0;
-  
-  @media (max-width: 768px) {
-    margin-right: 0;
-    margin-bottom: 10px;
-  }
-`;
-
-const OptionContent = styled.div`
-  flex: 1;
-`;
-
-const OptionTitle = styled.h3`
-  color: ${colors.darkGray};
-  margin: 0 0 5px 0;
-  font-size: 1.2rem;
-  font-weight: bold;
-  
-  @media (max-width: 768px) {
-    font-size: 1.1rem;
-  }
-`;
-
-const OptionDescription = styled.p`
-  color: ${colors.darkGray};
-  margin: 0;
-  opacity: 0.7;
-  font-size: 0.9rem;
-  line-height: 1.4;
-  
-  @media (max-width: 768px) {
-    font-size: 0.85rem;
-  }
-`;
-
-const LanguageSelect = styled.select`
-  padding: 8px 12px;
-  border: 1px solid ${colors.lightGray};
-  border-radius: 6px;
-  margin-left: 15px;
-  background: white;
-  color: ${colors.darkGray};
-  font-size: 0.9rem;
-  min-width: 120px;
-  
-  @media (max-width: 768px) {
-    margin-left: 0;
-    margin-top: 10px;
-    width: 100%;
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 30px;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 15px;
-  }
-`;
-
-const ActionButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border: none;
-  border-radius: 10px;
-  background: ${props => props.primary ? colors.primary : colors.lightGray};
-  color: ${props => props.primary ? 'white' : colors.darkGray};
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-  min-width: 140px;
-  
-  &:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    background: ${props => props.primary ? colors.primaryDark || '#0056b3' : colors.mediumGray || '#ddd'};
-  }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
-  
-  @media (max-width: 768px) {
-    width: 100%;
-    padding: 15px 20px;
-  }
-`;
-
 const FileUploadZone = styled.div`
-  border: 2px dashed ${props => props.isDragging ? colors.primary : colors.lightGray};
-  border-radius: 15px;
+  border: 3px dashed ${props => props.isDragging ? colors.primary : colors.lightGray};
+  border-radius: 20px;
   padding: 60px 20px;
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: ${props => props.isDragging ? colors.primary + '10' : 'transparent'};
+  background: ${props => props.isDragging ? `${colors.primary}10` : 'transparent'};
   
   &:hover {
     border-color: ${colors.primary};
-    background: ${colors.primary + '05'};
+    background: ${colors.primary}05;
   }
   
   @media (max-width: 768px) {
-    padding: 40px 15px;
+    padding: 40px 20px;
   }
 `;
 
-const HiddenFileInput = styled.input`
-  display: none;
+const SelectedFileInfo = styled.div`
+  background: ${colors.primary}10;
+  border: 1px solid ${colors.primary};
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  text-align: center;
 `;
 
-// $progress prop으로 변경하여 DOM으로 전달되지 않도록 함
 const ProgressBar = styled.div`
   width: 100%;
   height: 8px;
   background: ${colors.lightGray};
   border-radius: 4px;
+  margin: 15px 0;
   overflow: hidden;
-  margin: 20px 0;
   
-  &::after {
-    content: '';
-    display: block;
+  .progress {
     height: 100%;
-    width: ${props => props.$progress}%; // $progress로 변경
-    background: linear-gradient(90deg, ${colors.primary}, ${colors.primaryLight || '#4dabf7'});
+    background: linear-gradient(45deg, ${colors.primary}, ${colors.secondary});
     transition: width 0.3s ease;
-    border-radius: 4px;
+  }
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 20px;
+  
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: center;
+  }
+`;
+
+const ActionButton = styled.button`
+  background: ${props => props.disabled ? colors.lightGray : `linear-gradient(45deg, ${colors.primary}, ${colors.secondary})`};
+  color: ${props => props.disabled ? colors.darkGray : 'white'};
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+  }
+  
+  svg {
+    font-size: 1.1rem;
+  }
+`;
+
+const OptionCard = styled.div`
+  background: white;
+  border: 2px solid ${props => props.selected ? colors.primary : colors.lightGray};
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: ${colors.primary};
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  }
+`;
+
+const LanguageSelect = styled.select`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid ${colors.lightGray};
+  border-radius: 8px;
+  font-size: 1rem;
+  margin-top: 12px;
+  
+  &:focus {
+    outline: none;
+    border-color: ${colors.primary};
   }
 `;
 
 const ProcessingStatus = styled.div`
-  text-align: center;
-  padding: 20px;
-  
   .status-item {
-    margin: 15px 0;
-    font-size: 1.1rem;
-    color: ${colors.darkGray};
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-left: 4px solid ${colors.lightGray};
     
     &.completed {
-      color: ${colors.success || '#28a745'};
+      border-left-color: ${colors.success};
     }
     
     &.in-progress {
-      color: ${colors.primary};
-      animation: ${pulse} 2s infinite;
+      border-left-color: ${colors.primary};
     }
   }
 `;
 
 const FormGroup = styled.div`
-  margin-bottom: 20px;
+  margin-bottom: 24px;
   
   label {
     display: block;
     margin-bottom: 8px;
-    font-weight: bold;
+    font-weight: 600;
     color: ${colors.darkGray};
   }
   
@@ -366,62 +267,73 @@ const FormGroup = styled.div`
     border: 1px solid ${colors.lightGray};
     border-radius: 8px;
     font-size: 1rem;
-    transition: border-color 0.3s ease;
     
     &:focus {
       outline: none;
       border-color: ${colors.primary};
-      box-shadow: 0 0 0 3px ${colors.primary + '20'};
     }
   }
   
   textarea {
-    min-height: 120px;
+    height: 200px;
     resize: vertical;
+    font-family: 'Courier New', monospace;
   }
 `;
 
-const ContentPreview = styled.div`
-  padding: 15px;
+const TagsContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px;
   border: 1px solid ${colors.lightGray};
   border-radius: 8px;
-  background: ${colors.lightGray + '20'};
-  max-height: 300px;
-  overflow: auto;
-  white-space: pre-wrap;
-  font-family: inherit;
-  line-height: 1.6;
+  align-items: center;
+`;
+
+const Tag = styled.span`
+  background: ${colors.primary};
+  color: white;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   
-  @media (max-width: 768px) {
-    max-height: 200px;
-    font-size: 0.9rem;
+  .remove {
+    cursor: pointer;
+    font-weight: bold;
+    
+    &:hover {
+      color: ${colors.lightGray};
+    }
   }
 `;
 
 const VoiceUpload = () => {
-  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  const {
-    loading,
-    error,
-    message,
-    transcriptionJob,
-    transcriptionResults,
-    analysisResults,
-    translationResults
+  const { t } = useTranslation();
+  
+  const { 
+    loading, 
+    error, 
+    message, 
+    transcriptionJob, 
+    transcriptionResults, 
+    analysisResults, 
+    translationResults 
   } = useSelector(state => state.speech);
 
-  // 상태 관리
+  // 로컬 상태
   const [activeStep, setActiveStep] = useState(1);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [audioBlob, setAudioBlob] = useState(null); // 현재 사용되지 않음
   const [isDragging, setIsDragging] = useState(false);
   const [fileUploadProgress, setFileUploadProgress] = useState(0);
-
-  // useRef를 사용하여 setInterval ID 관리:
-  // useEffect 의존성 배열에 넣지 않고도 값을 유지하고 클리어할 수 있게 합니다.
+  const [tagInput, setTagInput] = useState('');
+  
   const statusCheckIntervalRef = useRef(null);
 
   // 옵션 선택 상태
@@ -435,7 +347,7 @@ const VoiceUpload = () => {
   const [noteData, setNoteData] = useState({
     title: '',
     content: '',
-    category: '기본', // ko.json에 맞게 "기본"으로 초기화
+    category: '기본',
     tags: []
   });
 
@@ -443,265 +355,110 @@ const VoiceUpload = () => {
   useEffect(() => {
     return () => {
       dispatch(resetSpeechState());
-      // 컴포넌트 언마운트 시에만 인터벌 확실히 정리
       if (statusCheckIntervalRef.current) {
         clearInterval(statusCheckIntervalRef.current);
         statusCheckIntervalRef.current = null;
       }
     };
-  }, [dispatch]); // dispatch만 의존성으로 유지
+  }, [dispatch]);
 
-  // 옵션 토글 핸들러
-  const handleOptionToggle = (option) => {
-    setProcessingOptions(prev => ({
-      ...prev,
-      [option]: !prev[option]
-    }));
-  };
-
-  // 언어 선택 핸들러
-  const handleLanguageChange = (e) => {
-    setProcessingOptions(prev => ({
-      ...prev,
-      targetLanguage: e.target.value
-    }));
-  };
-
-  // 파일 관련 핸들러들
-  const handleFileChange = (e) => {
-    if (e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0]);
+  // 자동 생성된 내용을 noteData.content에 설정
+  useEffect(() => {
+    if (transcriptionResults?.text) {
+      const autoContent = buildFinalContent();
+      setNoteData(prev => ({ ...prev, content: autoContent }));
     }
-  };
+  }, [transcriptionResults, analysisResults, translationResults, processingOptions]);
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = () => {
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e) => {
-    e.preventDefault();
-    setIsDragging(false);
-    if (e.dataTransfer.files.length > 0) {
-      setSelectedFile(e.dataTransfer.files[0]);
+  // 파일 업로드 완료 시 다음 단계로
+  useEffect(() => {
+    if (transcriptionJob && activeStep === 1) {
+      setActiveStep(2);
     }
-  };
+  }, [transcriptionJob, activeStep]);
 
-  // 파일 크기 포맷팅
-  const fileSize = (bytes) => {
-    const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(1)}MB`;
-  };
+  // 변환 완료 시 선택된 옵션들 자동 처리 (수정된 버전)
+  useEffect(() => {
+    if (transcriptionResults && activeStep === 3) {
+      console.log('🎯 옵션 처리 시작!', processingOptions);
 
-  // 파일 업로드 핸들러
-  const handleFileUpload = () => {
-    if (selectedFile) {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      setFileUploadProgress(0);
-
-      dispatch(uploadSpeechFile({
-        formData,
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setFileUploadProgress(percentCompleted);
-        }
-      }))
-        .then((result) => {
-          if (result.meta.requestStatus === 'fulfilled') {
-            setFileUploadProgress(100);
-            setTimeout(() => {
-              setActiveStep(2); // 옵션 선택 단계로 이동
-            }, 500);
+      const processOptions = async () => {
+        try {
+          if (processingOptions.summary) {
+            console.log('📝 요약 처리 시작');
+            await dispatch(analyzeTranscription({
+              transcriptionId: transcriptionJob.id,
+              options: { summary: true, keyPhrases: true }
+            })).unwrap();
+            console.log('✅ 요약 처리 완료');
           }
-        })
-        .catch(() => {
-          setFileUploadProgress(0);
-        });
-    }
-  };
 
-  // 옵션 확인 후 처리 시작
-  const handleStartProcessing = () => {
-    setActiveStep(3); // 처리 단계로 이동
-    // Transcribe는 업로드 시 이미 시작되었으므로 상태만 확인
-  };
+          if (processingOptions.translation) {
+            console.log('🌐 번역 처리 시작:', processingOptions.targetLanguage);
+            await dispatch(translateTranscription({
+              transcriptionId: transcriptionJob.id,
+              targetLanguage: processingOptions.targetLanguage
+            })).unwrap();
+            console.log('✅ 번역 처리 완료');
+          }
 
-  // 트랜스크립션 결과 처리 및 노트 데이터 업데이트
-  useEffect(() => {
-    if (transcriptionResults && transcriptionResults.text && activeStep >= 3) {
-      const titleText = transcriptionResults.text.substring(0, 20) || t('voice.recording.title');
-
-      setNoteData(prev => ({
-        ...prev,
-        title: `${titleText}${titleText.length >= 20 ? '...' : ''}`,
-        content: transcriptionResults.text || '', // transcriptionResults.text를 noteData.content로 설정
-      }));
-
-      // 선택된 옵션에 따라 추가 처리 실행 (activeStep이 3일 때만)
-      if (activeStep === 3 && transcriptionJob?.id) { // transcriptionJob.id가 존재할 때만 실행
-        if (processingOptions.summary) {
-          dispatch(analyzeTranscription({
-            transcriptionId: transcriptionJob.id,
-            options: { summary: true, keywords: true }
+          // 처리 완료 후 다음 단계로
+          setTimeout(() => {
+            setActiveStep(4);
+          }, 1000);
+        } catch (error) {
+          console.error('❌ 옵션 처리 오류:', error);
+          dispatch(showNotification({
+            message: `옵션 처리 중 오류: ${error.message || '알 수 없는 오류'}`,
+            type: 'error',
           }));
         }
+      };
 
-        if (processingOptions.translation) {
-          dispatch(translateTranscription({
-            transcriptionId: transcriptionJob.id,
-            targetLanguage: processingOptions.targetLanguage
-          }));
-        }
-
-        // 옵션이 없으면 바로 노트 저장 단계로
-        if (!processingOptions.summary && !processingOptions.translation) {
-          setActiveStep(4);
-        }
-      }
+      processOptions();
     }
-  }, [transcriptionResults, activeStep, processingOptions, transcriptionJob, dispatch, t]);
+  }, [transcriptionResults, activeStep, processingOptions, transcriptionJob?.id, dispatch]);
 
-
-  // 분석 및 번역 완료 확인 -> 노트 저장 단계로 이동
+  // 상태 체크 인터벌 관리
   useEffect(() => {
-    if (activeStep === 3 && transcriptionResults) {
-      const needsSummary = processingOptions.summary;
-      const needsTranslation = processingOptions.translation;
-
-      // analysisResults나 translationResults가 존재하고, 각각 summary/text 속성이 있는지를 확인
-      const hasSummary = !needsSummary || (analysisResults && analysisResults.summary);
-      const hasTranslation = !needsTranslation || (translationResults && translationResults[processingOptions.targetLanguage]);
-
-      if (hasSummary && hasTranslation) {
-        setActiveStep(4); // 노트 저장 단계로 이동
-      }
-    }
-  }, [analysisResults, translationResults, activeStep, processingOptions, transcriptionResults]);
-
-  // 트랜스크립션 상태 체크 로직 (주요 수정 부분)
-  useEffect(() => {
-    // console.log('useEffect (상태 체크) 실행됨:', {
-    //   transcriptionJobId: transcriptionJob?.id,
-    //   transcriptionJobStatus: transcriptionJob?.status,
-    //   activeStep: activeStep,
-    //   currentIntervalRef: statusCheckIntervalRef.current // useRef 값 확인
-    // });
-
-    // 조건: job ID가 있고, 진행 중이며, 현재 3단계일 때
-    if (transcriptionJob?.id && transcriptionJob.status === 'IN_PROGRESS' && activeStep === 3) {
-      // 이미 인터벌이 실행 중이 아니라면 새로 시작
-      if (!statusCheckIntervalRef.current) { // useRef 값으로 체크
-        // console.log('상태 확인 인터벌 시작 조건 충족. 새로운 인터벌 시작!');
+    if (activeStep === 3 && transcriptionJob?.status === 'IN_PROGRESS') {
+      if (!statusCheckIntervalRef.current) {
         statusCheckIntervalRef.current = setInterval(() => {
-          // console.log('checkTranscriptionStatus 디스패치됨:', transcriptionJob.id);
           dispatch(checkTranscriptionStatus(transcriptionJob.id));
-        }, 3000); // 3초 간격
+        }, 3000);
       }
-    } else { // job이 완료되었거나 실패했거나, 3단계가 아닐 때
-      // 기존 인터벌이 있다면 클리어
+    } else {
       if (statusCheckIntervalRef.current) {
-        // console.log('인터벌 클리어됨. (완료/실패/단계 변경)');
         clearInterval(statusCheckIntervalRef.current);
         statusCheckIntervalRef.current = null;
       }
     }
 
-    // 클린업 함수: 이펙트가 재실행되거나 컴포넌트가 언마운트될 때 기존 인터벌 정리
     return () => {
-      // console.log('useEffect (상태 체크) 클린업 실행됨');
-      if (statusCheckIntervalRef.current) { // 클린업 시에도 useRef 사용
+      if (statusCheckIntervalRef.current) {
         clearInterval(statusCheckIntervalRef.current);
         statusCheckIntervalRef.current = null;
       }
     };
-    // 의존성 배열 최소화: dispatch는 stable guarantee, useRef는 의존성 아님.
-    // transcriptionJob의 변경만으로 재실행되도록. activeStep도 명시적으로.
   }, [transcriptionJob?.status, transcriptionJob?.id, activeStep, dispatch]);
 
-
-  // 메시지 알림 처리 (성공 메시지는 노트 저장 시 별도로 처리)
+  // Redux 상태 변화 감지용 로그
   useEffect(() => {
-    if (message && !message.includes('노트가 성공적으로')) { // 노트 저장 성공 메시지는 제외
+    console.log('🔄 Redux 상태:', {
+      loading, error, message,
+      translationResults: translationResults
+    });
+  }, [loading, error, message, translationResults]);
+
+  // 메시지 알림 처리
+  useEffect(() => {
+    if (message && !message.includes('노트가 성공적으로')) {
       dispatch(showNotification({
         message,
         type: 'success',
       }));
     }
   }, [message, dispatch]);
-
-  // 노트 저장
-  const handleSaveNote = () => {
-    // transcriptionJob이 null이거나 id가 없는 경우를 대비하여 방어 코드 추가
-    if (!transcriptionJob || !transcriptionJob.id) {
-        dispatch(showNotification({
-            message: t('voice.error.transcriptionJobMissing'),
-            type: 'error',
-        }));
-        return; // 함수 실행 중단
-    }
-
-    const finalContent = buildFinalContent();
-
-    dispatch(createNoteFromTranscription({
-      transcriptionId: transcriptionJob.id,
-      title: noteData.title,
-      content: finalContent,
-      category: noteData.category,
-      tags: noteData.tags
-    })).then((result) => {
-      if (result.meta.requestStatus === 'fulfilled') {
-        dispatch(showNotification({ // 노트 저장 성공 알림
-          message: t('voice.save.actions.savedSuccessfully'),
-          type: 'success'
-        }));
-        navigate('/notes');
-      }
-    });
-  };
-
-  // 최종 노트 내용 구성
-  const buildFinalContent = () => {
-    // transcriptionResults가 null이거나 text 속성이 없는 경우를 대비하여 기본값 설정
-    let content = transcriptionResults?.text || ''; // 옵셔널 체이닝과 기본값 설정
-
-    if (processingOptions.summary && analysisResults) {
-        content += '\n\n## ' + t('voice.analysis.summary') + '\n' + (analysisResults.summary || ''); // summary가 null일 경우 대비
-
-        if (analysisResults.keywords && analysisResults.keywords.length > 0) { // keywords 배열이 있고 비어있지 않은지 확인
-            content += '\n\n\n## ' + t('voice.analysis.keywords') + '\n' + analysisResults.keywords.join(', ');
-        }
-    }
-
-    if (processingOptions.translation && translationResults) {
-        const languageNames = {
-            'en': t('voice.options.translation.languages.en'),
-            'ja': t('voice.options.translation.languages.ja'),
-            'zh': t('voice.options.translation.languages.zh'),
-            'es': t('voice.options.translation.languages.es'),
-            'fr': t('voice.options.translation.languages.fr'),
-            'de': t('voice.options.translation.languages.de')
-        };
-
-        // translationResults에 해당 targetLanguage의 텍스트가 있는지 확인
-        const translatedText = translationResults[processingOptions.targetLanguage];
-        if (translatedText) {
-            content += `\n\n\n## ${languageNames[processingOptions.targetLanguage]} ${t('voice.translation.title')}\n` + translatedText;
-        }
-    }
-
-    // 만약 content가 비어있다면, 사용자에게 내용이 없음을 알리거나 기본 텍스트 제공
-    if (!content.trim()) {
-        content = t('voice.save.noContentAvailable');
-    }
-
-    return content;
-  };
 
   // 에러 처리
   useEffect(() => {
@@ -712,6 +469,182 @@ const VoiceUpload = () => {
       }));
     }
   }, [error, dispatch]);
+
+  // 파일 변경 핸들러
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
+
+  // 드래그 앤 드롭 핸들러
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (event) => {
+    event.preventDefault();
+    setIsDragging(false);
+    
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      setSelectedFile(files[0]);
+    }
+  };
+
+  // 파일 업로드
+  const handleFileUpload = async () => {
+    if (!selectedFile) return;
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      await dispatch(uploadSpeechFile({ 
+        formData,
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setFileUploadProgress(percentCompleted);
+        }
+      })).unwrap();
+    } catch (error) {
+      console.error('파일 업로드 오류:', error);
+    }
+  };
+
+  // 옵션 토글
+  const handleOptionToggle = (option) => {
+    setProcessingOptions(prev => ({
+      ...prev,
+      [option]: !prev[option]
+    }));
+  };
+
+  // 언어 변경
+  const handleLanguageChange = (language) => {
+    setProcessingOptions(prev => ({
+      ...prev,
+      targetLanguage: language
+    }));
+  };
+
+  // 처리 시작
+  const handleStartProcessing = () => {
+    console.log('처리 시작 - 선택된 옵션:', processingOptions);
+    setActiveStep(3);
+  };
+
+  // 최종 컨텐츠 생성 (수정된 버전)
+  const buildFinalContent = () => {
+    let content = '';
+    
+    // 기본 텍스트 변환 결과
+    if (transcriptionResults?.text) {
+      content += `## 📝 텍스트 변환 결과\n\n${transcriptionResults.text}\n\n`;
+    }
+    
+    // 요약 결과
+    if (analysisResults?.summary) {
+      content += `## 📊 요약\n\n${analysisResults.summary}\n\n`;
+    }
+    
+    // 핵심 키워드
+    if (analysisResults?.keyPhrases && analysisResults.keyPhrases.length > 0) {
+      content += `## 🔑 핵심 키워드\n\n${analysisResults.keyPhrases.join(', ')}\n\n`;
+    }
+    
+    // 번역 결과 (수정된 부분)
+    if (processingOptions.translation && translationResults) {
+      const targetLang = processingOptions.targetLanguage;
+      const translationData = translationResults[targetLang];
+      
+      if (translationData) {
+        const languageNames = {
+          'en': '영어', 'ja': '일본어', 'zh': '중국어',
+          'es': '스페인어', 'fr': '프랑스어', 'de': '독일어'
+        };
+        const languageName = languageNames[targetLang] || targetLang;
+        
+        // 다양한 구조에 대응
+        const translatedText = translationData.translation || translationData.translatedText || translationData;
+        
+        if (translatedText) {
+          content += `## 🌐 번역 결과 (${languageName})\n\n${translatedText}\n\n`;
+        }
+      }
+    }
+    
+    return content;
+  };
+
+  // 태그 추가
+  const handleAddTag = () => {
+    if (tagInput.trim() && !noteData.tags.includes(tagInput.trim())) {
+      setNoteData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()]
+      }));
+      setTagInput('');
+    }
+  };
+
+  // 태그 제거
+  const handleRemoveTag = (tagToRemove) => {
+    setNoteData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  // 노트 저장
+  const handleSaveNote = async () => {
+    if (!transcriptionJob || !noteData.title.trim()) {
+      dispatch(showNotification({
+        message: '제목을 입력해주세요.',
+        type: 'error'
+      }));
+      return;
+    }
+
+    try {
+      await dispatch(createNoteFromTranscription({
+        transcriptionId: transcriptionJob.id,
+        noteData: {
+          ...noteData,
+          content: noteData.content || buildFinalContent()
+        }
+      })).unwrap();
+
+      dispatch(showNotification({
+        message: '노트가 성공적으로 저장되었습니다.',
+        type: 'success'
+      }));
+
+      setTimeout(() => {
+        navigate('/notes');
+      }, 1500);
+    } catch (error) {
+      console.error('노트 저장 오류:', error);
+    }
+  };
+
+  // 파일 크기 포맷팅
+  const fileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   return (
     <Container>
@@ -728,7 +661,7 @@ const VoiceUpload = () => {
         </Step>
         <StepConnector completed={activeStep > 2} />
         <Step active={activeStep === 3}>
-          <FaFileAlt className="icon" /> {/* FaFileText 대신 FaFileAlt 사용 */}
+          <FaFileAlt className="icon" />
           {t('voice.steps.process')}
         </Step>
         <StepConnector completed={activeStep > 3} />
@@ -758,111 +691,131 @@ const VoiceUpload = () => {
             <div style={{ fontSize: '1.2rem', color: colors.darkGray, marginBottom: '10px' }}>
               {t('voice.upload.description')}
             </div>
-            <div style={{ fontSize: '0.9rem', color: colors.darkGray, opacity: 0.7 }}>
+            <div style={{ fontSize: '0.9rem', color: colors.lightGray }}>
               {t('voice.upload.formats')}
             </div>
-
-            <HiddenFileInput
-              id="file-upload"
-              type="file"
-              accept=".mp3,.wav,.m4a"
-              onChange={handleFileChange}
-              disabled={loading}
-            />
           </FileUploadZone>
 
+          <input
+            id="file-upload"
+            type="file"
+            accept=".mp3,.wav,.m4a"
+            onChange={handleFileChange}
+            style={{ display: 'none' }}
+          />
+
           {selectedFile && (
-            <div style={{ marginTop: '30px', textAlign: 'center' }}>
-              <div style={{
-                marginBottom: '20px',
-                padding: '20px',
-                background: colors.lightGray + '30',
-                borderRadius: '8px'
-              }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>
-                  {t('voice.upload.selectedFile', { filename: selectedFile.name })}
-                </div>
-                <div style={{ color: colors.darkGray, opacity: 0.8 }}>
-                  {t('voice.upload.size', { size: fileSize(selectedFile.size) })}
-                </div>
+            <SelectedFileInfo>
+              <div style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '10px' }}>
+                {t('voice.upload.selectedFile', { filename: selectedFile.name })}
               </div>
-
-              {loading && fileUploadProgress > 0 && (
-                <ProgressBar $progress={fileUploadProgress} />
+              <div style={{ color: colors.darkGray }}>
+                {t('voice.upload.size', { size: fileSize(selectedFile.size) })}
+              </div>
+              
+              {fileUploadProgress > 0 && (
+                <ProgressBar>
+                  <div className="progress" style={{ width: `${fileUploadProgress}%` }} />
+                </ProgressBar>
               )}
-
-
-              <ActionButton
-                onClick={handleFileUpload}
-                disabled={loading}
-                primary
-              >
-                <FaUpload />
-                {loading ? t('voice.upload.uploading') : t('voice.upload.start')}
-              </ActionButton>
-            </div>
+              
+              <ButtonGroup>
+                <ActionButton onClick={handleFileUpload} disabled={loading}>
+                  <FaUpload />
+                  {loading ? t('voice.upload.uploading') : t('voice.upload.start')}
+                </ActionButton>
+              </ButtonGroup>
+            </SelectedFileInfo>
           )}
         </SectionCard>
       )}
 
       {activeStep === 2 && (
-        <OptionsCard>
-          <OptionsTitle>{t('voice.options.title')}</OptionsTitle>
+        <SectionCard>
+          <h2 style={{ textAlign: 'center', marginBottom: '30px', color: colors.darkGray }}>
+            {t('voice.options.title')}
+          </h2>
+          <p style={{ textAlign: 'center', marginBottom: '40px', color: colors.darkGray }}>
+            {t('voice.options.subtitle')}
+          </p>
 
-          <OptionItem
+          {/* 요약 옵션 */}
+          <OptionCard 
             selected={processingOptions.summary}
             onClick={() => handleOptionToggle('summary')}
           >
-            <OptionCheckbox checked={processingOptions.summary}>
-              {processingOptions.summary && <FaCheck />}
-            </OptionCheckbox>
-            <OptionContent>
-              <OptionTitle>{t('voice.options.summary.title')}</OptionTitle>
-              <OptionDescription>
-                {t('voice.options.summary.description')}
-              </OptionDescription>
-            </OptionContent>
-          </OptionItem>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <input 
+                type="checkbox" 
+                checked={processingOptions.summary}
+                onChange={() => handleOptionToggle('summary')}
+                style={{ transform: 'scale(1.2)' }}
+              />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>
+                  {t('voice.options.summary.title')}
+                </h3>
+                <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', color: colors.darkGray }}>
+                  {t('voice.options.summary.description')}
+                </p>
+              </div>
+            </div>
+          </OptionCard>
 
-          <OptionItem
+          {/* 번역 옵션 */}
+          <OptionCard 
             selected={processingOptions.translation}
             onClick={() => handleOptionToggle('translation')}
           >
-            <OptionCheckbox checked={processingOptions.translation}>
-              {processingOptions.translation && <FaCheck />}
-            </OptionCheckbox>
-            <OptionContent>
-              <OptionTitle>{t('voice.options.translation.title')}</OptionTitle>
-              <OptionDescription>
-                {t('voice.options.translation.description')}
-              </OptionDescription>
-            </OptionContent>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <input 
+                type="checkbox" 
+                checked={processingOptions.translation}
+                onChange={() => handleOptionToggle('translation')}
+                style={{ transform: 'scale(1.2)' }}
+              />
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '600' }}>
+                  {t('voice.options.translation.title')}
+                </h3>
+                <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', color: colors.darkGray }}>
+                  {t('voice.options.translation.description')}
+                </p>
+              </div>
+            </div>
+            
             {processingOptions.translation && (
-              <LanguageSelect
-                value={processingOptions.targetLanguage}
-                onChange={handleLanguageChange}
-              >
-                <option value="en">{t('voice.options.translation.languages.en')}</option>
-                <option value="ja">{t('voice.options.translation.languages.ja')}</option>
-                <option value="zh">{t('voice.options.translation.languages.zh')}</option>
-                <option value="es">{t('voice.options.translation.languages.es')}</option>
-                <option value="fr">{t('voice.options.translation.languages.fr')}</option>
-                <option value="de">{t('voice.options.translation.languages.de')}</option>
-              </LanguageSelect>
+              <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #e9ecef' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+                  {t('voice.options.translation.selectLanguage')}
+                </label>
+                <LanguageSelect 
+                  value={processingOptions.targetLanguage}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <option value="en">{t('voice.options.translation.languages.en')}</option>
+                  <option value="ja">{t('voice.options.translation.languages.ja')}</option>
+                  <option value="zh">{t('voice.options.translation.languages.zh')}</option>
+                  <option value="es">{t('voice.options.translation.languages.es')}</option>
+                  <option value="fr">{t('voice.options.translation.languages.fr')}</option>
+                  <option value="de">{t('voice.options.translation.languages.de')}</option>
+                </LanguageSelect>
+              </div>
             )}
-          </OptionItem>
+          </OptionCard>
 
           <ButtonGroup>
             <ActionButton onClick={() => setActiveStep(1)}>
               <FaArrowLeft />
               {t('voice.options.actions.previous')}
             </ActionButton>
-            <ActionButton onClick={handleStartProcessing} primary>
-              {t('voice.options.actions.startProcessing')}
+            <ActionButton onClick={handleStartProcessing}>
               <FaArrowRight />
+              {t('voice.options.actions.startProcessing')}
             </ActionButton>
           </ButtonGroup>
-        </OptionsCard>
+        </SectionCard>
       )}
 
       {activeStep === 3 && (
@@ -871,29 +824,204 @@ const VoiceUpload = () => {
             {t('voice.processing.title')}
           </h2>
 
+          {/* 처리 상태 표시 */}
           <ProcessingStatus>
+            {/* 텍스트 변환 상태 */}
             <div className={`status-item ${transcriptionResults ? 'completed' : 'in-progress'}`}>
               {t('voice.processing.transcribing', {
                 status: transcriptionResults ? t('voice.processing.status.completed') : t('voice.processing.status.inProgress')
               })}
+              {!transcriptionResults && (
+                <div style={{
+                  width: '16px',
+                  height: '16px',
+                  border: '2px solid #e9ecef',
+                  borderTop: '2px solid #007bff',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+              )}
             </div>
 
+            {/* 요약 생성 상태 */}
             {processingOptions.summary && (
               <div className={`status-item ${analysisResults ? 'completed' : 'in-progress'}`}>
                 {t('voice.processing.analyzing', {
                   status: analysisResults ? t('voice.processing.status.completed') : t('voice.processing.status.inProgress')
                 })}
+                {!analysisResults && transcriptionResults && (
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid #e9ecef',
+                    borderTop: '2px solid #007bff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                )}
               </div>
             )}
 
+            {/* 번역 상태 */}
             {processingOptions.translation && (
-              <div className={`status-item ${translationResults && translationResults[processingOptions.targetLanguage] ? 'completed' : 'in-progress'}`}>
+              <div className={`status-item ${(translationResults && translationResults[processingOptions.targetLanguage]) ? 'completed' : 'in-progress'}`}>
                 {t('voice.processing.translating', {
-                  status: translationResults && translationResults[processingOptions.targetLanguage] ? t('voice.processing.status.completed') : t('voice.processing.status.inProgress')
+                  status: (translationResults && translationResults[processingOptions.targetLanguage]) 
+                    ? t('voice.processing.status.completed') 
+                    : t('voice.processing.status.inProgress')
                 })}
+                {(!translationResults || !translationResults[processingOptions.targetLanguage]) && transcriptionResults && (
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    border: '2px solid #e9ecef',
+                    borderTop: '2px solid #007bff',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite'
+                  }} />
+                )}
               </div>
             )}
           </ProcessingStatus>
+
+          {/* 처리 완료된 결과들 미리보기 */}
+          
+          {/* 텍스트 변환 결과 */}
+          {transcriptionResults && (
+            <div style={{ marginTop: '30px' }}>
+              <h3 style={{ margin: '0 0 15px 0', color: colors.darkGray }}>📝 텍스트 변환 결과</h3>
+              <div style={{
+                background: 'white',
+                padding: '15px',
+                borderRadius: '8px',
+                maxHeight: '200px',
+                overflow: 'auto',
+                fontSize: '14px',
+                lineHeight: '1.5',
+                border: '1px solid #e9ecef'
+              }}>
+                {transcriptionResults.text}
+              </div>
+            </div>
+          )}
+
+          {/* 요약 결과 */}
+          {processingOptions.summary && analysisResults && (
+            <div style={{ marginTop: '20px' }}>
+              <h3 style={{ margin: '0 0 15px 0', color: colors.darkGray }}>📊 요약 결과</h3>
+              <div style={{
+                background: 'white',
+                padding: '15px',
+                borderRadius: '8px',
+                fontSize: '14px',
+                lineHeight: '1.5',
+                border: '1px solid #e9ecef'
+              }}>
+                {analysisResults.summary}
+              </div>
+              
+              {analysisResults.keyPhrases && analysisResults.keyPhrases.length > 0 && (
+                <div style={{ marginTop: '15px' }}>
+                  <h4 style={{ margin: '0 0 10px 0', color: colors.darkGray }}>🔑 핵심 키워드</h4>
+                  <div style={{
+                    background: '#f8f9fa',
+                    padding: '10px',
+                    borderRadius: '6px',
+                    fontSize: '13px'
+                  }}>
+                    {analysisResults.keyPhrases.join(', ')}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 번역 결과 표시 - 수정된 부분 */}
+          {processingOptions.translation && translationResults && (
+            (() => {
+              const targetLang = processingOptions.targetLanguage;
+              const translationData = translationResults[targetLang];
+              const translatedText = translationData?.translation || 
+                                     translationData?.translatedText || 
+                                     translationData;
+              
+              if (translatedText) {
+                return (
+                  <div style={{
+                    background: 'white',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    margin: '20px 0',
+                    boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+                    borderLeft: '4px solid #28a745'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '15px',
+                      paddingBottom: '10px',
+                      borderBottom: '1px solid #e9ecef'
+                    }}>
+                      <h3 style={{ margin: 0, color: colors.darkGray }}>🌐 번역 결과</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{
+                          background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                          color: 'white',
+                          padding: '4px 12px',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                          fontWeight: '600'
+                        }}>
+                          {t(`voice.options.translation.languages.${targetLang}`)}
+                        </span>
+                        <button 
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(translatedText);
+                              dispatch(showNotification({
+                                message: '번역 결과가 복사되었습니다.',
+                                type: 'success'
+                              }));
+                            } catch (error) {
+                              console.error('복사 실패:', error);
+                            }
+                          }}
+                          style={{
+                            background: '#007bff',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            transition: 'background 0.2s'
+                          }}
+                          onMouseOver={(e) => e.target.style.background = '#0056b3'}
+                          onMouseOut={(e) => e.target.style.background = '#007bff'}
+                        >
+                          복사
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{
+                      fontSize: '14px',
+                      lineHeight: '1.6',
+                      color: '#333',
+                      whiteSpace: 'pre-wrap',
+                      background: '#f8f9fa',
+                      padding: '15px',
+                      borderRadius: '8px'
+                    }}>
+                      {translatedText}
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })()
+          )}
+
         </SectionCard>
       )}
 
@@ -909,7 +1037,7 @@ const VoiceUpload = () => {
               type="text"
               value={noteData.title}
               onChange={(e) => setNoteData(prev => ({ ...prev, title: e.target.value }))}
-              placeholder={t('editor.fields.title.placeholder')}
+              placeholder="노트 제목을 입력하세요"
             />
           </FormGroup>
 
@@ -919,18 +1047,58 @@ const VoiceUpload = () => {
               value={noteData.category}
               onChange={(e) => setNoteData(prev => ({ ...prev, category: e.target.value }))}
             >
-              <option value="기본">{t('notes.categories.basic')}</option>
-              <option value="학습">{t('notes.categories.study')}</option>
-              <option value="회의">{t('notes.categories.meeting')}</option>
-              <option value="개인">{t('notes.categories.personal')}</option>
+              <option value="기본">기본</option>
+              <option value="회의">회의</option>
+              <option value="강의">강의</option>
+              <option value="개인">개인</option>
+              <option value="기타">기타</option>
             </select>
+          </FormGroup>
+
+          {/* 태그 입력 섹션 */}
+          <FormGroup>
+            <label>{t('editor.fields.tags.label')}</label>
+            
+            {/* 기존 태그 표시 */}
+            <TagsContainer>
+              {noteData.tags.length === 0 ? (
+                <span style={{ color: colors.lightGray }}>
+                  {t('editor.fields.tags.empty')}
+                </span>
+              ) : (
+                noteData.tags.map(tag => (
+                  <Tag key={tag}>
+                    {tag}
+                    <span className="remove" onClick={() => handleRemoveTag(tag)}>×</span>
+                  </Tag>
+                ))
+              )}
+            </TagsContainer>
+            
+            {/* 새 태그 입력 */}
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                placeholder={t('editor.fields.tags.placeholder')}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                style={{ flex: 1 }}
+              />
+              <ActionButton onClick={handleAddTag} disabled={!tagInput.trim()}>
+                <FaPlus />
+                {t('editor.fields.tags.add')}
+              </ActionButton>
+            </div>
           </FormGroup>
 
           <FormGroup>
             <label>{t('voice.save.contentPreview')}</label>
-            <ContentPreview>
-              {buildFinalContent()}
-            </ContentPreview>
+            <textarea
+              value={noteData.content}
+              onChange={(e) => setNoteData(prev => ({ ...prev, content: e.target.value }))}
+              placeholder="자동 생성된 내용을 확인하고 수정하세요..."
+            />
           </FormGroup>
 
           <ButtonGroup>
@@ -938,33 +1106,15 @@ const VoiceUpload = () => {
               <FaArrowLeft />
               {t('voice.save.actions.editOptions')}
             </ActionButton>
-            <ActionButton
+            <ActionButton 
               onClick={handleSaveNote}
-              primary
-              disabled={loading || !noteData.title.trim() || !transcriptionJob?.id} // !transcriptionJob?.id 추가
+              disabled={loading || !noteData.title.trim()}
             >
+              <FaSave />
               {loading ? t('voice.save.actions.saving') : t('voice.save.actions.saveNote')}
             </ActionButton>
           </ButtonGroup>
         </SectionCard>
-      )}
-
-      {/* 에러 표시 */}
-      {error && (
-        <div style={{
-          position: 'fixed',
-          top: '20px',
-          right: '20px',
-          background: '#ff4757',
-          color: 'white',
-          padding: '15px 20px',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          zIndex: 1000,
-          maxWidth: '400px'
-        }}>
-          {error}
-        </div>
       )}
     </Container>
   );
