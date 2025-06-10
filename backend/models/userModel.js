@@ -154,6 +154,7 @@ const getUserStats = async (userId) => {
   }
 };
 
+// 비밀번호 재설정 토큰 생성
 const createPasswordResetToken = async (userId, token, expiresAt) => {
   const sql = `
     INSERT INTO password_reset_tokens (user_id, token, expires_at)
@@ -164,14 +165,17 @@ const createPasswordResetToken = async (userId, token, expiresAt) => {
     await db.query(sql, [userId, token, expiresAt]);
     return true;
   } catch (error) {
+    console.error('토큰 생성 오류:', error);
     throw error;
   }
 };
 
+// 비밀번호 재설정 토큰 검증
 const verifyPasswordResetToken = async (token) => {
   const sql = `
-    SELECT * FROM password_reset_tokens 
-    WHERE token = ? AND expires_at > CURRENT_TIMESTAMP
+    SELECT user_id, token, expires_at, created_at
+    FROM password_reset_tokens 
+    WHERE token = ? AND expires_at > NOW()
     ORDER BY created_at DESC 
     LIMIT 1
   `;
@@ -180,17 +184,66 @@ const verifyPasswordResetToken = async (token) => {
     const tokens = await db.query(sql, [token]);
     return tokens[0]; // 첫 번째 토큰 반환 또는 undefined
   } catch (error) {
+    console.error('토큰 검증 오류:', error);
     throw error;
   }
 };
 
+// 특정 토큰 삭제
 const deletePasswordResetToken = async (token) => {
   const sql = 'DELETE FROM password_reset_tokens WHERE token = ?';
   
   try {
-    await db.query(sql, [token]);
-    return true;
+    const result = await db.query(sql, [token]);
+    return result.affectedRows > 0;
   } catch (error) {
+    console.error('토큰 삭제 오류:', error);
+    throw error;
+  }
+};
+
+// 특정 사용자의 모든 비밀번호 재설정 토큰 삭제
+const deletePasswordResetTokensByUserId = async (userId) => {
+  const sql = 'DELETE FROM password_reset_tokens WHERE user_id = ?';
+  
+  try {
+    const result = await db.query(sql, [userId]);
+    return result.affectedRows;
+  } catch (error) {
+    console.error('사용자 토큰 일괄 삭제 오류:', error);
+    throw error;
+  }
+};
+
+// 만료된 토큰 정리 (선택적 - 정기적으로 실행)
+const cleanupExpiredTokens = async () => {
+  const sql = 'DELETE FROM password_reset_tokens WHERE expires_at <= NOW()';
+  
+  try {
+    const result = await db.query(sql);
+    if (result.affectedRows > 0) {
+      console.log(`${result.affectedRows}개의 만료된 토큰을 정리했습니다.`);
+    }
+    return result.affectedRows;
+  } catch (error) {
+    console.error('만료된 토큰 정리 오류:', error);
+    throw error;
+  }
+};
+
+// 사용자의 활성 토큰 개수 확인
+const getActiveTokenCount = async (userId) => {
+  const sql = `
+    SELECT COUNT(*) as count 
+    FROM password_reset_tokens 
+    WHERE user_id = ? AND expires_at > NOW()
+  `;
+  
+  try {
+    const result = await db.query(sql, [userId]);
+    return result[0].count;
+  } catch (error) {
+    console.error('활성 토큰 개수 확인 오류:', error);
     throw error;
   }
 };
@@ -208,5 +261,8 @@ module.exports = {
   getUserStats,
   createPasswordResetToken,
   verifyPasswordResetToken,
-  deletePasswordResetToken
+  deletePasswordResetToken,
+  deletePasswordResetTokensByUserId,
+  cleanupExpiredTokens,
+  getActiveTokenCount
 };
