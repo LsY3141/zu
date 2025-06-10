@@ -6,7 +6,8 @@ import 'react-calendar/dist/Calendar.css';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { FaCalendarAlt, FaCheckCircle, FaStickyNote, FaMicrophone, FaClock } from 'react-icons/fa';
-import { useSelector } from 'react-redux';
+import { formatRelativeTime } from '../../utils/formatters';
+import noteApi from '../../api/noteApi';
 
 // Colors
 const colors = {
@@ -212,10 +213,7 @@ const NotesHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid transparent;
-  border-image: linear-gradient(90deg, ${colors.magenta}, ${colors.cyan}) 1;
+  margin-bottom: 15px;
   
   h3 {
     font-size: 16px;
@@ -227,16 +225,15 @@ const NotesHeader = styled.div`
     
     svg {
       margin-right: 8px;
-      color: ${colors.lime};
+      color: ${colors.cyan};
       font-size: 18px;
     }
   }
   
   .count {
-    background: linear-gradient(135deg, ${colors.cyan}, ${colors.lime});
+    background: linear-gradient(135deg, ${colors.magenta}, ${colors.cyan});
     color: white;
     padding: 4px 8px;
-    border-radius: 0;
     font-size: 11px;
     font-weight: 600;
     clip-path: polygon(0 0, calc(100% - 4px) 0, 100% 100%, 4px 100%);
@@ -250,24 +247,13 @@ const NotesList = styled.div`
 `;
 
 const NoteItem = styled.div`
-  padding: 16px;
   background: ${colors.white};
-  border: 1px solid ${colors.lightGray};
+  padding: 15px;
   cursor: pointer;
   transition: all 0.3s ease;
+  border: 1px solid ${colors.lightGray};
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 8px 100%);
   position: relative;
-  overflow: hidden;
-  
-  &:hover {
-    transform: translateX(4px);
-    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-    border-color: ${colors.cyan};
-    
-    &::before {
-      width: 4px;
-      opacity: 1;
-    }
-  }
   
   &::before {
     content: '';
@@ -275,44 +261,36 @@ const NoteItem = styled.div`
     left: 0;
     top: 0;
     bottom: 0;
-    width: 0;
-    background: linear-gradient(180deg, ${colors.magenta}, ${colors.cyan});
-    transition: all 0.3s ease;
-    opacity: 0;
+    width: 4px;
+    background: ${({ isVoice }) => isVoice ? colors.cyan : colors.magenta};
   }
   
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 0;
-    height: 0;
-    border-left: 12px solid transparent;
-    border-top: 12px solid ${({ noteType }) => 
-      noteType === 'voice' ? colors.cyan : colors.magenta};
-    opacity: 0.3;
+  &:hover {
+    transform: translateX(5px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+    border-color: ${({ isVoice }) => isVoice ? colors.cyan : colors.magenta};
   }
   
   .title {
-    font-weight: 600;
     font-size: 14px;
+    font-weight: 600;
     color: ${colors.darkGray};
-    margin-bottom: 4px;
+    margin-bottom: 8px;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
   }
   
   .content {
     font-size: 12px;
-    color: #666;
-    line-height: 1.4;
+    color: ${colors.darkGray};
+    opacity: 0.7;
+    margin-bottom: 10px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    margin-bottom: 8px;
+    line-height: 1.4;
   }
   
   .meta {
@@ -320,13 +298,13 @@ const NoteItem = styled.div`
     justify-content: space-between;
     align-items: center;
     font-size: 10px;
-    color: #999;
   }
   
   .type {
     display: flex;
     align-items: center;
     gap: 4px;
+    font-weight: 600;
     color: ${({ isVoice }) => isVoice ? colors.cyan : colors.magenta};
     background: ${({ isVoice }) => isVoice ? colors.cyan + '20' : colors.magenta + '20'};
     padding: 2px 6px;
@@ -341,6 +319,8 @@ const NoteItem = styled.div`
     display: flex;
     align-items: center;
     gap: 4px;
+    color: ${colors.darkGray};
+    opacity: 0.6;
     
     svg {
       font-size: 8px;
@@ -391,17 +371,79 @@ const CalendarSidebar = () => {
   const [value, onChange] = useState(new Date());
   const [notesOnDates, setNotesOnDates] = useState({});
   const [selectedDateNotes, setSelectedDateNotes] = useState([]);
-  const { notes } = useSelector(state => state.notes);
+  const [calendarNotes, setCalendarNotes] = useState([]); // 캘린더 전용 노트 상태
+  const [loading, setLoading] = useState(false);
   
-  // Process notes by date
+  // 캘린더 전용 노트 데이터 직접 로딩
+  const loadCalendarNotes = async () => {
+    try {
+      setLoading(true);
+      console.log('CalendarSidebar - 전용 노트 데이터 로딩 시작');
+      
+      const response = await noteApi.getNotes({
+        page: 1,
+        limit: 10000, // 충분히 큰 값
+        search: '',
+        category: '',
+        sortBy: 'updated_at',
+        sortOrder: 'desc',
+        isDeleted: false
+      });
+      
+      console.log('CalendarSidebar - API 응답 전체:', response);
+      
+      // API 응답 구조 확인 후 처리
+      const responseData = response.data || response;
+      const notes = responseData.notes || [];
+      const total = responseData.total || notes.length;
+      
+      console.log('CalendarSidebar - 노트 로딩 완료:', {
+        total: total,
+        loaded: notes.length,
+        responseStructure: {
+          hasData: !!response.data,
+          hasNotes: !!responseData.notes,
+          notesType: typeof responseData.notes,
+          notesLength: notes.length
+        }
+      });
+      
+      setCalendarNotes(notes);
+    } catch (error) {
+      console.error('CalendarSidebar - 노트 로딩 실패:', error);
+      console.error('CalendarSidebar - 에러 상세:', {
+        message: error.message,
+        response: error.response,
+        stack: error.stack
+      });
+      setCalendarNotes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // 컴포넌트 마운트 시 노트 로딩
   useEffect(() => {
-    if (notes && notes.length > 0) {
+    loadCalendarNotes();
+  }, []);
+  
+  // calendarNotes가 변경될 때 날짜별 매핑
+  useEffect(() => {
+    console.log('CalendarSidebar - 날짜별 노트 매핑 시작:', {
+      notesCount: calendarNotes.length
+    });
+    
+    if (calendarNotes && calendarNotes.length > 0) {
       const notesMap = {};
       
-      notes.forEach(note => {
+      calendarNotes.forEach(note => {
         try {
-          const noteDate = new Date(note.createdAt);
-          if (isNaN(noteDate.getTime())) return;
+          // updatedAt을 기준으로 날짜 계산
+          const noteDate = new Date(note.updatedAt);
+          if (isNaN(noteDate.getTime())) {
+            console.warn('CalendarSidebar - 잘못된 날짜 형식:', note.updatedAt, note);
+            return;
+          }
           
           const dateStr = noteDate.toDateString();
           if (!notesMap[dateStr]) {
@@ -409,49 +451,64 @@ const CalendarSidebar = () => {
           }
           notesMap[dateStr].push(note);
         } catch (error) {
-          console.error('날짜 처리 오류:', error, note);
+          console.error('CalendarSidebar - 날짜 처리 오류:', error, note);
         }
+      });
+      
+      console.log('CalendarSidebar - 날짜별 매핑 완료:', {
+        totalDates: Object.keys(notesMap).length,
+        datesWithNotes: Object.keys(notesMap).map(date => ({
+          date,
+          count: notesMap[date].length
+        }))
       });
       
       setNotesOnDates(notesMap);
       
-      // Set selected date notes
+      // 선택된 날짜의 노트 업데이트
       const selectedDateStr = value.toDateString();
-      setSelectedDateNotes(notesMap[selectedDateStr] || []);
+      const notesForDate = notesMap[selectedDateStr] || [];
+      console.log('CalendarSidebar - 선택된 날짜 노트:', {
+        selectedDate: selectedDateStr,
+        notesCount: notesForDate.length
+      });
+      setSelectedDateNotes(notesForDate);
+    } else {
+      console.log('CalendarSidebar - 노트 데이터 없음');
+      setNotesOnDates({});
+      setSelectedDateNotes([]);
     }
-  }, [notes, value]);
+  }, [calendarNotes, value]);
   
   const handleDateChange = (date) => {
+    console.log('CalendarSidebar - 날짜 변경:', date.toDateString());
     onChange(date);
     const dateStr = date.toDateString();
-    setSelectedDateNotes(notesOnDates[dateStr] || []);
+    const notesForDate = notesOnDates[dateStr] || [];
+    console.log('CalendarSidebar - 변경된 날짜의 노트:', {
+      date: dateStr,
+      notesCount: notesForDate.length
+    });
+    setSelectedDateNotes(notesForDate);
   };
   
   const tileContent = ({ date, view }) => {
     if (view === 'month') {
       const dateStr = date.toDateString();
-      return notesOnDates[dateStr] && notesOnDates[dateStr].length > 0 ? (
-        <div className="note-indicator" />
-      ) : null;
+      const hasNotes = notesOnDates[dateStr] && notesOnDates[dateStr].length > 0;
+      return hasNotes ? <div className="note-indicator" /> : null;
     }
     return null;
   };
   
   const handleNoteClick = (noteId) => {
+    console.log('노트 클릭:', noteId);
     navigate(`/notes/${noteId}`);
   };
   
   const formatShortWeekday = (locale, date) => {
     const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
     return weekdays[date.getDay()];
-  };
-  
-  const formatTime = (dateString) => {
-    try {
-      return format(new Date(dateString), 'HH:mm', { locale: ko });
-    } catch (error) {
-      return '';
-    }
   };
   
   return (
@@ -489,7 +546,14 @@ const CalendarSidebar = () => {
           )}
         </NotesHeader>
         
-        {selectedDateNotes.length > 0 ? (
+        {loading ? (
+          <EmptyState>
+            <div className="icon">
+              <FaCalendarAlt />
+            </div>
+            <p>노트를 불러오는 중...</p>
+          </EmptyState>
+        ) : selectedDateNotes.length > 0 ? (
           <NotesList>
             {selectedDateNotes.map(note => (
               <NoteItem 
@@ -507,7 +571,7 @@ const CalendarSidebar = () => {
                   </div>
                   <div className="time">
                     <FaClock />
-                    {formatTime(note.updatedAt)} 수정됨
+                    {formatRelativeTime(note.updatedAt)}
                   </div>
                 </div>
               </NoteItem>

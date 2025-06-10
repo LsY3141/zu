@@ -712,30 +712,6 @@ const SharedWithMeNotes = () => {
     return text.slice(0, maxLength) + '...';
   };
 
-  const formatRelativeTimeCustom = (date) => {
-    const now = new Date();
-    const noteDate = new Date(date);
-    const diffMs = now - noteDate;
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    
-    if (diffDays > 7) {
-      return noteDate.toLocaleDateString('ko-KR', { 
-        month: 'short', 
-        day: 'numeric' 
-      });
-    } else if (diffDays > 0) {
-      return `${diffDays}일 전`;
-    } else if (diffHours > 0) {
-      return `${diffHours}시간 전`;
-    } else if (diffMinutes > 0) {
-      return `${diffMinutes}분 전`;
-    } else {
-      return '방금 전';
-    }
-  };
-
   const getInitials = (name) => {
     if (!name) return 'U';
     return name.charAt(0).toUpperCase();
@@ -881,7 +857,7 @@ const SharedWithMeNotes = () => {
                     </NoteType>
                     <DateDisplay>
                       <FaClock />
-                      {formatRelativeTimeCustom(note.updatedAt)}
+                      {formatRelativeTime(note.updatedAt)}
                     </DateDisplay>
                   </NoteFooter>
                 </CardContent>

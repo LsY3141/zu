@@ -11,15 +11,7 @@ const parseDate = (date) => {
   // DB에서 "YYYY-MM-DD HH:mm:ss" 형태의 한국 시간 문자열을 받음
   // 이를 한국시간으로 명시적으로 파싱
   const parsedDate = moment.tz(date, 'YYYY-MM-DD HH:mm:ss', 'Asia/Seoul');
-  
-  console.log('날짜 파싱 디버그:', {
-    input: date,
-    inputType: typeof date,
-    parsed: parsedDate.format('YYYY-MM-DD HH:mm:ss'),
-    timezone: parsedDate.format('Z'),
-    isValid: parsedDate.isValid(),
-    note: 'DB 데이터를 Asia/Seoul로 파싱'
-  });
+
   
   return parsedDate;
 };
@@ -49,17 +41,25 @@ export const formatRelativeTime = (date) => {
   const parsedDate = parseDate(date);
   if (!parsedDate || !parsedDate.isValid()) return '';
   
-  // 현재 시간도 한국시간으로 설정
-  const now = moment.tz('Asia/Seoul');
-  const relativeTime = parsedDate.from(now);
+  // moment-timezone이 안 되니까 직접 계산
+  const now = new Date();
+  const koreanNow = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC + 9시간
   
-  console.log('상대 시간 계산 디버그:', {
-    input: date,
-    parsed: parsedDate.format('YYYY-MM-DD HH:mm:ss Z'),
-    now: now.format('YYYY-MM-DD HH:mm:ss Z'),
-    relative: relativeTime,
-    note: '둘 다 Asia/Seoul 기준으로 계산'
-  });
+  // DB 시간도 한국시간으로 파싱
+  const noteDate = new Date(date + '+09:00');
+  
+  const diffMs = koreanNow - noteDate;
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  
+  let relativeTime;
+  if (diffMinutes < 1) relativeTime = '방금 전';
+  else if (diffMinutes < 60) relativeTime = `${diffMinutes}분 전`;
+  else if (diffHours < 24) relativeTime = `${diffHours}시간 전`;
+  else if (diffDays < 30) relativeTime = `${diffDays}일 전`;
+  else relativeTime = noteDate.toLocaleDateString('ko-KR');
+  
   
   return relativeTime;
 };
@@ -69,12 +69,6 @@ export const formatDateWithTimezone = (date) => {
   const parsedDate = parseDate(date);
   if (!parsedDate || !parsedDate.isValid()) return '';
   
-  console.log('시간대 포함 포맷팅 디버그:', {
-    original: date,
-    parsed: parsedDate.format('YYYY-MM-DD HH:mm:ss Z'),
-    relative: parsedDate.fromNow(),
-    note: 'Asia/Seoul 시간대로 처리됨'
-  });
   
   return parsedDate.format('YYYY년 MM월 DD일 HH:mm');
 };
