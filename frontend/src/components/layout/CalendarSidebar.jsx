@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { ko, enUS } from 'date-fns/locale';
 import { FaCalendarAlt, FaCheckCircle, FaStickyNote, FaMicrophone, FaClock } from 'react-icons/fa';
 import { formatRelativeTime } from '../../utils/formatters';
 import noteApi from '../../api/noteApi';
@@ -367,12 +368,18 @@ const EmptyState = styled.div`
 
 // Main Component
 const CalendarSidebar = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [value, onChange] = useState(new Date());
   const [notesOnDates, setNotesOnDates] = useState({});
   const [selectedDateNotes, setSelectedDateNotes] = useState([]);
-  const [calendarNotes, setCalendarNotes] = useState([]); // 캘린더 전용 노트 상태
+  const [calendarNotes, setCalendarNotes] = useState([]);
   const [loading, setLoading] = useState(false);
+  
+  // 현재 언어에 따른 로케일 선택
+  const getDateLocale = () => {
+    return i18n.language === 'ko' ? ko : enUS;
+  };
   
   // 캘린더 전용 노트 데이터 직접 로딩
   const loadCalendarNotes = async () => {
@@ -507,18 +514,33 @@ const CalendarSidebar = () => {
   };
   
   const formatShortWeekday = (locale, date) => {
-    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    const weekdays = t('calendar.weekdays', { returnObjects: true });
     return weekdays[date.getDay()];
+  };
+  
+  // 날짜 포맷팅 함수
+  const formatCurrentDate = () => {
+    const currentDate = format(new Date(), i18n.language === 'ko' ? 'yyyy년 MM월 dd일' : 'MMMM dd, yyyy', { 
+      locale: getDateLocale() 
+    });
+    return t('calendar.currentDate', { date: currentDate });
+  };
+  
+  const formatSelectedDate = () => {
+    const selectedDate = format(value, i18n.language === 'ko' ? 'MM월 dd일' : 'MMM dd', { 
+      locale: getDateLocale() 
+    });
+    return t('calendar.notesForDate', { date: selectedDate });
   };
   
   return (
     <Container>
       <Header>
         <h2>
-          <FaCalendarAlt /> 캘린더
+          <FaCalendarAlt /> {t('calendar.title')}
         </h2>
         <div className="date">
-          {format(new Date(), 'yyyy년 MM월 dd일', { locale: ko })}
+          {formatCurrentDate()}
         </div>
       </Header>
       
@@ -539,10 +561,12 @@ const CalendarSidebar = () => {
         <NotesHeader>
           <h3>
             <FaCheckCircle /> 
-            {format(value, 'MM월 dd일', { locale: ko })} 노트
+            {formatSelectedDate()}
           </h3>
           {selectedDateNotes.length > 0 && (
-            <span className="count">{selectedDateNotes.length}</span>
+            <span className="count">
+              {t('calendar.noteCount', { count: selectedDateNotes.length })}
+            </span>
           )}
         </NotesHeader>
         
@@ -551,7 +575,7 @@ const CalendarSidebar = () => {
             <div className="icon">
               <FaCalendarAlt />
             </div>
-            <p>노트를 불러오는 중...</p>
+            <p>{t('calendar.loading')}</p>
           </EmptyState>
         ) : selectedDateNotes.length > 0 ? (
           <NotesList>
@@ -567,7 +591,7 @@ const CalendarSidebar = () => {
                 <div className="meta">
                   <div className="type">
                     {note.isVoice ? <FaMicrophone /> : <FaStickyNote />}
-                    {note.isVoice ? '음성' : '텍스트'}
+                    {note.isVoice ? t('calendar.noteTypes.voice') : t('calendar.noteTypes.text')}
                   </div>
                   <div className="time">
                     <FaClock />
@@ -583,8 +607,8 @@ const CalendarSidebar = () => {
               <FaCalendarAlt />
             </div>
             <p>
-              선택한 날짜에<br />
-              작성된 노트가 없습니다.
+              {t('calendar.empty.title')}<br />
+              {t('calendar.empty.subtitle')}
             </p>
           </EmptyState>
         )}

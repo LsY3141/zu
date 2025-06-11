@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
 import { 
@@ -119,20 +120,7 @@ const AudioPlayer = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   border-radius: ${({ theme }) => theme.borderRadius.medium};
   box-shadow: ${({ theme }) => theme.boxShadow.card};
-  padding: 15px;
-`;
-
-const AudioTitle = styled.div`
-  font-weight: 500;
-  margin-bottom: 10px;
-  display: flex;
-  align-items: center;
-  color: ${({ theme }) => theme.colors.text};
-  
-  svg {
-    margin-right: 8px;
-    color: ${({ theme }) => theme.colors.primary};
-  }
+  padding: 20px;
 `;
 
 const StyledAudio = styled.audio`
@@ -143,33 +131,36 @@ const TranscriptionCard = styled.div`
   background-color: ${({ theme }) => theme.colors.cardBackground};
   border-radius: ${({ theme }) => theme.borderRadius.medium};
   box-shadow: ${({ theme }) => theme.boxShadow.card};
-  margin: 20px 0;
+  overflow: hidden;
+  margin-bottom: 20px;
 `;
 
 const TranscriptionHeader = styled.div`
   padding: 15px 20px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  font-weight: 500;
+  background-color: ${({ theme }) => theme.colors.primaryLight};
+  color: ${({ theme }) => theme.colors.primary};
+  font-weight: 600;
+  font-size: 16px;
 `;
 
 const TranscriptionContent = styled.div`
-  padding: 15px 20px;
+  padding: 20px;
 `;
 
 const SpeakerText = styled.div`
   margin-bottom: 15px;
-  padding-left: 10px;
-  border-left: 3px solid ${({ theme, speakerId }) => {
-    const colors = ['primary', 'secondary', 'success', 'warning', 'info'];
-    return theme.colors[colors[parseInt(speakerId) % colors.length]];
-  }};
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
 `;
 
 const SpeakerLabel = styled.div`
-  font-weight: 500;
-  margin-bottom: 5px;
   display: flex;
   align-items: center;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.primary};
+  margin-bottom: 5px;
   
   svg {
     margin-right: 5px;
@@ -177,9 +168,10 @@ const SpeakerLabel = styled.div`
 `;
 
 const NoDataMessage = styled.div`
-  color: ${({ theme }) => theme.colors.textSecondary};
   text-align: center;
-  padding: 20px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  padding: 40px;
+  font-size: 16px;
 `;
 
 // AI 도우미 섹션
@@ -211,6 +203,7 @@ const AIAssistantTitle = styled.h3`
 `;
 
 const NoteDetail = () => {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -241,10 +234,10 @@ const NoteDetail = () => {
   
   const handleDelete = () => {
     dispatch(openConfirmDialog({
-      title: '노트 삭제',
-      message: '이 노트를 휴지통으로 이동하시겠습니까?',
-      confirmText: '삭제',
-      cancelText: '취소',
+      title: t('noteDetail.confirmDelete.title'),
+      message: t('noteDetail.confirmDelete.message'),
+      confirmText: t('noteDetail.confirmDelete.confirm'),
+      cancelText: t('noteDetail.confirmDelete.cancel'),
       onConfirm: () => {
         dispatch(moveNoteToTrash(id));
         navigate('/notes');
@@ -270,11 +263,11 @@ const NoteDetail = () => {
             onClick={handleBack}
             icon={<FaArrowLeft />}
           >
-            뒤로 가기
+            {t('noteDetail.actions.back')}
           </BackButton>
         </ControlsHeader>
         <NoDataMessage>
-          노트를 불러오는 중 오류가 발생했습니다: {error}
+          {t('noteDetail.errors.loadingError')}: {error}
         </NoDataMessage>
       </NoteDetailContainer>
     );
@@ -290,11 +283,11 @@ const NoteDetail = () => {
             onClick={handleBack}
             icon={<FaArrowLeft />}
           >
-            뒤로 가기
+            {t('noteDetail.actions.back')}
           </BackButton>
         </ControlsHeader>
         <NoDataMessage>
-          노트를 찾을 수 없습니다.
+          {t('noteDetail.errors.notFound')}
         </NoDataMessage>
       </NoteDetailContainer>
     );
@@ -309,66 +302,74 @@ const NoteDetail = () => {
           onClick={handleBack}
           icon={<FaArrowLeft />}
         >
-          뒤로 가기
+          {t('noteDetail.actions.back')}
         </BackButton>
         
         <ActionButtons>
           <Button 
             variant="outline" 
             size="small" 
-            onClick={handleChatBotToggle}
-            icon={<FaComments />}
+            onClick={handleEdit}
+            icon={<FaEdit />}
           >
-            AI 도우미
+            {t('noteDetail.actions.edit')}
           </Button>
+          
           <Button 
             variant="outline" 
             size="small" 
             onClick={handleShare}
             icon={<FaShareAlt />}
           >
-            공유
+            {t('noteDetail.actions.share')}
           </Button>
+          
           <Button 
             variant="outline" 
             size="small" 
-            onClick={handleEdit}
-            icon={<FaEdit />}
+            onClick={handleChatBotToggle}
+            icon={<FaRobot />}
           >
-            수정
+            {t('noteDetail.actions.chatBot')}
           </Button>
+          
           <Button 
             variant="outline" 
             size="small" 
             onClick={handleDelete}
             icon={<FaTrash />}
+            color="danger"
           >
-            삭제
+            {t('noteDetail.actions.delete')}
           </Button>
         </ActionButtons>
       </ControlsHeader>
-
-
       
       <NoteCard>
         <NoteHeader>
           <NoteTitle>{currentNote.title}</NoteTitle>
           <NoteMeta>
             <NoteType>
-              {currentNote.isVoice ? <FaMicrophone /> : <FaStickyNote />}
-              {currentNote.isVoice ? '음성 노트' : '텍스트 노트'}
-              {currentNote.category && ` • ${currentNote.category}`}
+              {currentNote.isVoice ? (
+                <>
+                  <FaMicrophone />
+                  {t('noteDetail.types.voice')}
+                </>
+              ) : (
+                <>
+                  <FaStickyNote />
+                  {t('noteDetail.types.text')}
+                </>
+              )}
             </NoteType>
             <NoteTimestamp>
-              {formatRelativeTime(currentNote.updatedAt)} 수정됨
+              {formatRelativeTime(currentNote.updatedAt)}
             </NoteTimestamp>
           </NoteMeta>
         </NoteHeader>
         
         <NoteContent>
-          <ReactMarkdown>
-            {currentNote.content}
-          </ReactMarkdown>
+          <ReactMarkdown>{currentNote.content}</ReactMarkdown>
         </NoteContent>
         
         {currentNote.tags && currentNote.tags.length > 0 && (
@@ -383,28 +384,27 @@ const NoteDetail = () => {
         )}
       </NoteCard>
       
+      {/* 음성 파일이 있는 경우 오디오 플레이어 */}
       {currentNote.isVoice && currentNote.audioUrl && (
         <AudioPlayer>
-          <AudioTitle>
-            <FaMicrophone /> 음성 녹음
-          </AudioTitle>
           <StyledAudio controls>
-            <source src={currentNote.audioUrl} type="audio/wav" />
-            브라우저가 오디오 재생을 지원하지 않습니다.
+            <source src={currentNote.audioUrl} type="audio/mpeg" />
+            Your browser does not support the audio element.
           </StyledAudio>
         </AudioPlayer>
       )}
       
+      {/* 음성 텍스트 변환 결과 */}
       {currentNote.isVoice && currentNote.transcription && currentNote.transcription.speakers && currentNote.transcription.speakers.length > 0 && (
         <TranscriptionCard>
           <TranscriptionHeader>
-            음성 텍스트 변환 결과
+            {t('noteDetail.transcription.title')}
           </TranscriptionHeader>
           <TranscriptionContent>
             {currentNote.transcription.speakers.map((speaker, index) => (
               <SpeakerText key={index} speakerId={speaker.id}>
                 <SpeakerLabel>
-                  <FaMicrophone /> 화자 {speaker.id}
+                  <FaMicrophone /> {t('noteDetail.transcription.speaker')} {speaker.id}
                 </SpeakerLabel>
                 {speaker.text}
               </SpeakerText>
@@ -413,10 +413,11 @@ const NoteDetail = () => {
         </TranscriptionCard>
       )}
       
+      {/* 요약 */}
       {currentNote.isVoice && currentNote.transcription && currentNote.transcription.summary && (
         <TranscriptionCard>
           <TranscriptionHeader>
-            요약
+            {t('noteDetail.transcription.summary')}
           </TranscriptionHeader>
           <TranscriptionContent>
             {currentNote.transcription.summary}
@@ -424,10 +425,11 @@ const NoteDetail = () => {
         </TranscriptionCard>
       )}
       
+      {/* 핵심 개념 */}
       {currentNote.isVoice && currentNote.transcription && currentNote.transcription.keyPhrases && currentNote.transcription.keyPhrases.length > 0 && (
         <TranscriptionCard>
           <TranscriptionHeader>
-            핵심 개념
+            {t('noteDetail.transcription.keyPhrases')}
           </TranscriptionHeader>
           <TranscriptionContent>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -461,7 +463,5 @@ const NoteDetail = () => {
     </NoteDetailContainer>
   );
 };
-
-
 
 export default NoteDetail;

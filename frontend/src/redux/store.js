@@ -5,6 +5,7 @@ import noteReducer from './slices/noteSlice';
 import uiReducer from './slices/uiSlice';
 import speechReducer from './slices/speechSlice';
 import chatReducer from './slices/chatSlice';
+import userReducer from './slices/userSlice'; // 추가
 
 const store = configureStore({
   reducer: {
@@ -13,6 +14,7 @@ const store = configureStore({
     ui: uiReducer,
     speech: speechReducer,
     chat: chatReducer,
+    user: userReducer // 추가
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

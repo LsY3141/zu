@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { FaEnvelope, FaLock, FaSignInAlt } from 'react-icons/fa';
 import { login, clearError } from '../../redux/slices/authSlice';
@@ -10,17 +11,15 @@ import Alert from '../shared/Alert';
 
 const FormContainer = styled.form`
   width: 100%;
-  max-width: 400px;
-  margin: 0 auto;
 `;
 
 const ForgotPasswordLink = styled(Link)`
   display: block;
   text-align: right;
-  font-size: 14px;
+  margin: 10px 0 20px;
   color: ${({ theme }) => theme.colors.primary};
-  margin-top: -10px;
-  margin-bottom: 20px;
+  text-decoration: none;
+  font-size: 14px;
   
   &:hover {
     text-decoration: underline;
@@ -28,6 +27,7 @@ const ForgotPasswordLink = styled(Link)`
 `;
 
 const LoginForm = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error, isAuthenticated } = useSelector(state => state.auth);
@@ -56,13 +56,13 @@ const LoginForm = () => {
     const errors = {};
     
     if (!formData.email) {
-      errors.email = '이메일을 입력해주세요.';
+      errors.email = t('login.form.email.required');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = '유효한 이메일 형식이 아닙니다.';
+      errors.email = t('login.form.email.invalid');
     }
     
     if (!formData.password) {
-      errors.password = '비밀번호를 입력해주세요.';
+      errors.password = t('login.form.password.required');
     }
     
     setFormErrors(errors);
@@ -106,8 +106,8 @@ const LoginForm = () => {
       <Input
         type="email"
         name="email"
-        label="이메일"
-        placeholder="이메일 주소를 입력하세요"
+        label={t('login.form.email.label')}
+        placeholder={t('login.form.email.placeholder')}
         value={formData.email}
         onChange={handleChange}
         icon={<FaEnvelope />}
@@ -118,8 +118,8 @@ const LoginForm = () => {
       <Input
         type="password"
         name="password"
-        label="비밀번호"
-        placeholder="비밀번호를 입력하세요"
+        label={t('login.form.password.label')}
+        placeholder={t('login.form.password.placeholder')}
         value={formData.password}
         onChange={handleChange}
         icon={<FaLock />}
@@ -128,7 +128,7 @@ const LoginForm = () => {
       />
       
       <ForgotPasswordLink to="/forgot-password">
-        비밀번호를 잊으셨나요?
+        {t('login.form.forgotPassword')}
       </ForgotPasswordLink>
       
       <Button
@@ -154,7 +154,7 @@ const LoginForm = () => {
           e.target.style.boxShadow = '0 4px 15px rgba(233, 30, 99, 0.3)';
         }}
       >
-        {loading ? '로그인 중...' : '로그인'}
+        {loading ? t('login.form.loggingIn') : t('login.form.loginButton')}
       </Button>
     </FormContainer>
   );

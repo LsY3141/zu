@@ -1,35 +1,32 @@
-// src/components/shared/ChatBot.jsx
-import React, { useState, useRef, useEffect } from 'react';
+// src/components/shared/ChatBot.jsx - 영어 전용 버전
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import styled, { keyframes } from 'styled-components';
 import { 
   FaComments, 
   FaTimes, 
   FaPaperPlane, 
-  FaRobot,
-  FaUser,
-  FaSpinner,
-  FaTrash
+  FaUser, 
+  FaRobot, 
+  FaTrash 
 } from 'react-icons/fa';
 import { 
+  sendChatMessage, 
   toggleChat, 
   closeChat, 
   addLocalMessage, 
-  sendChatMessage,
   clearLocalChatHistory 
 } from '../../redux/slices/chatSlice';
 import { showNotification } from '../../redux/slices/uiSlice';
-import Button from './Button';
 
-const slideUp = keyframes`
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+const fadeIn = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+`;
+
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 `;
 
 const ChatBotContainer = styled.div`
@@ -37,6 +34,199 @@ const ChatBotContainer = styled.div`
   bottom: 20px;
   right: 20px;
   z-index: 1000;
+`;
+
+const ChatWindow = styled.div`
+  width: 400px;
+  height: 500px;
+  background: ${({ theme }) => theme.colors.background};
+  border-radius: ${({ theme }) => theme.borderRadius.large};
+  box-shadow: ${({ theme }) => theme.boxShadow.modal};
+  display: flex;
+  flex-direction: column;
+  animation: ${fadeIn} 0.3s ease-out;
+  margin-bottom: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const ChatHeader = styled.div`
+  background: ${({ theme }) => theme.colors.primary};
+  color: white;
+  padding: 15px 20px;
+  border-radius: ${({ theme }) => theme.borderRadius.large} ${({ theme }) => theme.borderRadius.large} 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const ChatTitle = styled.h3`
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+`;
+
+const CloseButton = styled.button`
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+`;
+
+const ChatActions = styled.div`
+  padding: 10px 20px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  display: flex;
+  justify-content: flex-end;
+`;
+
+const ClearButton = styled.button`
+  background: none;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: ${({ theme }) => theme.borderRadius.small};
+  font-size: 12px;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.danger};
+    color: white;
+    border-color: ${({ theme }) => theme.colors.danger};
+  }
+`;
+
+const ChatMessages = styled.div`
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+`;
+
+const Message = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: ${({ isUser }) => isUser ? 'flex-end' : 'flex-start'};
+`;
+
+const MessageBubble = styled.div`
+  max-width: 80%;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background-color: ${({ isUser, theme }) => 
+    isUser ? theme.colors.primary : theme.colors.cardBackground
+  };
+  color: ${({ isUser, theme }) => 
+    isUser ? 'white' : theme.colors.text
+  };
+  word-wrap: break-word;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+`;
+
+const MessageMeta = styled.div`
+  display: flex;
+  align-items: center;
+  margin-top: 5px;
+  font-size: 12px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  gap: 5px;
+`;
+
+const LoadingMessage = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  background-color: ${({ theme }) => theme.colors.cardBackground};
+  border-radius: 18px;
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const SpinnerIcon = styled(FaRobot)`
+  animation: ${spin} 1s linear infinite;
+`;
+
+const EmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const EmptyStateIcon = styled(FaComments)`
+  font-size: 48px;
+  margin-bottom: 15px;
+  opacity: 0.5;
+`;
+
+const EmptyStateText = styled.p`
+  text-align: center;
+  max-width: 200px;
+  line-height: 1.5;
+`;
+
+const ChatInput = styled.div`
+  padding: 20px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  display: flex;
+  gap: 10px;
+`;
+
+const InputField = styled.input`
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 25px;
+  outline: none;
+  font-size: 14px;
+  background-color: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.text};
+  
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.primary};
+  }
+  
+  &:disabled {
+    background-color: ${({ theme }) => theme.colors.disabled};
+    cursor: not-allowed;
+  }
+`;
+
+const SendButton = styled.button`
+  padding: 12px 16px;
+  background-color: ${({ theme }) => theme.colors.primary};
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  &:hover:not(:disabled) {
+    background-color: ${({ theme }) => theme.colors.primaryDark};
+    transform: scale(1.05);
+  }
+  
+  &:disabled {
+    background-color: ${({ theme }) => theme.colors.disabled};
+    cursor: not-allowed;
+  }
 `;
 
 const ChatToggleButton = styled.button`
@@ -51,224 +241,35 @@ const ChatToggleButton = styled.button`
   align-items: center;
   justify-content: center;
   font-size: 24px;
-  box-shadow: ${({ theme }) => theme.boxShadow.card};
-  transition: all 0.3s ease;
-  
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: ${({ theme }) => theme.boxShadow.hover};
-  }
-`;
-
-const ChatWindow = styled.div`
-  position: absolute;
-  bottom: 80px;
-  right: 0;
-  width: 400px;
-  height: 500px;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
-  border-radius: ${({ theme }) => theme.borderRadius.medium};
-  box-shadow: ${({ theme }) => theme.boxShadow.hover};
-  display: ${({ isOpen }) => isOpen ? 'flex' : 'none'};
-  flex-direction: column;
-  overflow: hidden;
-  animation: ${slideUp} 0.3s ease;
-`;
-
-const ChatHeader = styled.div`
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: white;
-  padding: 15px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-`;
-
-const ChatTitle = styled.div`
-  font-size: 16px;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  
-  svg {
-    margin-right: 8px;
-  }
-`;
-
-const HeaderButtons = styled.div`
-  display: flex;
-  gap: 5px;
-`;
-
-const HeaderButton = styled.button`
-  background: none;
-  border: none;
-  color: white;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  transition: background-color 0.2s;
-  
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-  }
-`;
-
-const ChatMessages = styled.div`
-  flex: 1;
-  padding: 15px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background-color: #f8f9fa;
-`;
-
-const Message = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: ${({ isUser }) => isUser ? 'flex-end' : 'flex-start'};
-`;
-
-const MessageBubble = styled.div`
-  max-width: 80%;
-  padding: 10px 15px;
-  border-radius: 18px;
-  background-color: ${({ theme, isUser }) => 
-    isUser ? theme.colors.primary : '#ffffff'};
-  color: ${({ theme, isUser }) => 
-    isUser ? 'white' : theme.colors.text};
-  font-size: 14px;
-  line-height: 1.4;
-  word-wrap: break-word;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  border: ${({ isUser }) => isUser ? 'none' : '1px solid #e9ecef'};
-`;
-
-const MessageMeta = styled.div`
-  display: flex;
-  align-items: center;
-  margin-top: 5px;
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  gap: 5px;
-`;
-
-const ChatInput = styled.div`
-  padding: 15px;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  background-color: white;
-`;
-
-const InputField = styled.input`
-  flex: 1;
-  padding: 10px 15px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 20px;
-  font-size: 14px;
-  outline: none;
-  background-color: #f8f9fa;
-  
-  &:focus {
-    border-color: ${({ theme }) => theme.colors.primary};
-    background-color: white;
-  }
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-`;
-
-const SendButton = styled.button`
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: ${({ theme }) => theme.colors.primary};
-  color: white;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  box-shadow: ${({ theme }) => theme.boxShadow.modal};
   transition: all 0.2s;
   
-  &:hover:not(:disabled) {
+  &:hover {
+    background-color: ${({ theme }) => theme.colors.primaryDark};
     transform: scale(1.1);
   }
-  
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none;
-  }
 `;
 
-const LoadingMessage = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  font-style: italic;
-  padding: 10px 15px;
-  background-color: white;
-  border-radius: 18px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e9ecef;
-`;
-
-const SpinnerIcon = styled(FaSpinner)`
-  animation: spin 1s linear infinite;
-  
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-`;
-
-const EmptyState = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  text-align: center;
-  padding: 20px;
-`;
-
-const EmptyStateIcon = styled.div`
-  font-size: 48px;
-  margin-bottom: 10px;
-  opacity: 0.5;
-`;
-
-const EmptyStateText = styled.div`
-  font-size: 14px;
-  line-height: 1.4;
-`;
+const formatTime = (timestamp) => {
+  return new Date(timestamp).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
 const ChatBot = ({ noteId, noteTitle, noteContent }) => {
   const dispatch = useDispatch();
-  const { 
-    currentChat, 
-    loading, 
-    error 
-  } = useSelector(state => state.chat);
-  
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef(null);
-
-  const isOpen = currentChat.isOpen && currentChat.noteId === noteId;
-  const messages = currentChat.noteId === noteId ? currentChat.messages : [];
+  
+  const { loading, error } = useSelector(state => state.chat || {});
+  const currentChat = useSelector(state => 
+    state.chat?.currentChat || { messages: [], isOpen: false }
+  );
+  const isOpen = currentChat?.isOpen || false;
+  
+  const chatHistories = useSelector(state => state.chat?.chatHistories || {});
+  const messages = currentChat?.noteId === noteId ? currentChat.messages : (chatHistories[noteId] || []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -278,7 +279,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
     scrollToBottom();
   }, [messages]);
 
-  // 에러 알림 표시
+  // Error notification
   useEffect(() => {
     if (error) {
       dispatch(showNotification({
@@ -288,17 +289,17 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
     }
   }, [error, dispatch]);
 
-  // 챗봇 초기 메시지 설정
+  // Initial chatbot message setup
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const welcomeMessage = {
         id: Date.now(),
-        text: `안녕하세요! "${noteTitle}" 노트에 대해 궁금한 것이 있으시면 언제든 물어보세요. 노트 내용을 분석하여 답변드리겠습니다.`,
+        text: `Hello! If you have any questions about the "${noteTitle}" note, feel free to ask. I'll analyze the note content and provide answers.`,
         isUser: false,
         timestamp: new Date().toISOString()
       };
       
-      // 초기 메시지를 Redux 상태에 추가
+      // Add initial message to Redux state
       dispatch({
         type: 'chat/addAIResponse',
         payload: {
@@ -322,7 +323,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
 
     const userMessage = inputValue.trim();
     
-    // 사용자 메시지를 로컬에 추가
+    // Add user message locally
     dispatch(addLocalMessage({ 
       noteId, 
       message: userMessage 
@@ -330,21 +331,47 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
     
     setInputValue('');
 
-    // 서버에 메시지 전송
+    // Send message to server
     try {
-      await dispatch(sendChatMessage({
+      console.log('=== Message sending started ===');
+      const result = await dispatch(sendChatMessage({
         noteId,
         message: userMessage,
         noteContent
       })).unwrap();
+      
+      console.log('=== API response received ===', result);
+      
+      // 🔥 This is key! Add AI response to screen
+      if (result.success && result.response && result.response.message) {
+        dispatch({
+          type: 'chat/addAIResponse',
+          payload: {
+            noteId,
+            response: result.response.message
+          }
+        });
+        console.log('✅ AI response added to screen successfully');
+      } else {
+        console.log('❌ Response format is incorrect:', result);
+        // If response format is wrong, show default message
+        dispatch({
+          type: 'chat/addAIResponse',
+          payload: {
+            noteId,
+            response: 'I received a response but the format is not correct.'
+          }
+        });
+      }
+      
     } catch (err) {
-      console.error('챗봇 메시지 전송 오류:', err);
-      // 에러 메시지를 채팅에 추가
+      console.error('Chatbot message sending error:', err);
+      // Add error message to chat
       dispatch({
         type: 'chat/addAIResponse',
         payload: {
           noteId,
-          response: '죄송합니다. 현재 서비스에 일시적인 문제가 있습니다. 잠시 후 다시 시도해주세요.'
+          response: 'Sorry, there is a temporary issue with the service. Please try again later.'
         }
       });
     }
@@ -358,57 +385,47 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
   };
 
   const handleClearHistory = () => {
-    if (window.confirm('채팅 히스토리를 모두 삭제하시겠습니까?')) {
+    if (window.confirm('Are you sure you want to delete all chat history?')) {
       dispatch(clearLocalChatHistory({ noteId }));
       dispatch(showNotification({
-        message: '채팅 히스토리가 삭제되었습니다.',
+        message: 'Chat history has been deleted.',
         type: 'success'
       }));
     }
   };
 
-  const formatTime = (timestamp) => {
-    try {
-      return new Date(timestamp).toLocaleTimeString('ko-KR', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      });
-    } catch (error) {
-      return '';
-    }
-  };
+  if (!isOpen) {
+    return (
+      <ChatBotContainer>
+        <ChatToggleButton onClick={handleToggleChat}>
+          <FaComments />
+        </ChatToggleButton>
+      </ChatBotContainer>
+    );
+  }
 
   return (
     <ChatBotContainer>
-      <ChatWindow isOpen={isOpen}>
+      <ChatWindow>
         <ChatHeader>
-          <ChatTitle>
-            <FaRobot />
-            AI 노트 도우미
-          </ChatTitle>
-          <HeaderButtons>
-            <HeaderButton 
-              onClick={handleClearHistory} 
-              title="채팅 히스토리 삭제"
-              disabled={messages.length === 0}
-            >
-              <FaTrash />
-            </HeaderButton>
-            <HeaderButton onClick={handleCloseChat} title="닫기">
-              <FaTimes />
-            </HeaderButton>
-          </HeaderButtons>
+          <ChatTitle>AI Assistant</ChatTitle>
+          <CloseButton onClick={handleCloseChat}>
+            <FaTimes />
+          </CloseButton>
         </ChatHeader>
+
+        <ChatActions>
+          <ClearButton onClick={handleClearHistory}>
+            <FaTrash /> Clear History
+          </ClearButton>
+        </ChatActions>
 
         <ChatMessages>
           {messages.length === 0 ? (
             <EmptyState>
-              <EmptyStateIcon>
-                <FaRobot />
-              </EmptyStateIcon>
+              <EmptyStateIcon />
               <EmptyStateText>
-                노트에 대해 궁금한 것을<br />
-                언제든 물어보세요!
+                No conversations yet. Ask me anything about the note!
               </EmptyStateText>
             </EmptyState>
           ) : (
@@ -429,7 +446,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
                 <Message isUser={false}>
                   <LoadingMessage>
                     <SpinnerIcon />
-                    AI가 답변을 생각하고 있습니다...
+                    AI is thinking of an answer...
                   </LoadingMessage>
                 </Message>
               )}
@@ -442,7 +459,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
         <ChatInput>
           <InputField
             type="text"
-            placeholder="노트에 대해 궁금한 것을 물어보세요..."
+            placeholder="Ask me anything about the note..."
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}

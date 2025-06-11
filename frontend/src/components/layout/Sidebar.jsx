@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { 
   FaHome, 
@@ -52,12 +53,12 @@ const LogoContainer = styled.div`
   border-bottom: 1px solid rgba(255,255,255,0.1);
   margin-bottom: 8px;
   position: relative;
-  cursor: pointer; /* 클릭 가능 표시 */
-  transition: all 0.3s ease; /* 호버 효과를 위한 트랜지션 */
+  cursor: pointer;
+  transition: all 0.3s ease;
   
   &:hover {
-    background: rgba(255,255,255,0.1); /* 호버 시 배경 변경 */
-    transform: translateX(2px); /* 살짝 오른쪽으로 이동 */
+    background: rgba(255,255,255,0.1);
+    transform: translateX(2px);
   }
   
   &::after {
@@ -292,6 +293,7 @@ const UserInfo = styled.div`
 `;
 
 const Sidebar = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   
   const handleCreateTextNote = () => {
@@ -302,7 +304,6 @@ const Sidebar = () => {
     navigate('/voice');
   };
   
-  // 로고 클릭 시 홈으로 이동하는 함수
   const handleLogoClick = () => {
     navigate('/');
   };
@@ -312,8 +313,8 @@ const Sidebar = () => {
       <LogoContainer onClick={handleLogoClick}>
         <Logo>AI</Logo>
         <LogoText>
-          <LogoTitle>AI 학습 지원</LogoTitle>
-          <LogoSubtitle>Smart Note System</LogoSubtitle>
+          <LogoTitle>{t('sidebar.logo.title')}</LogoTitle>
+          <LogoSubtitle>{t('sidebar.logo.subtitle')}</LogoSubtitle>
         </LogoText>
       </LogoContainer>
       
@@ -321,11 +322,11 @@ const Sidebar = () => {
         <CreateButtonsContainer>
           <CreateButton primary onClick={handleCreateTextNote}>
             <FaPen />
-            새 노트 작성
+            {t('sidebar.actions.createNote')}
           </CreateButton>
           <CreateButton onClick={handleCreateVoiceNote}>
             <FaMicrophone />
-            음성 노트 녹음
+            {t('sidebar.actions.recordVoice')}
           </CreateButton>
         </CreateButtonsContainer>
       </CreateSection>
@@ -333,33 +334,33 @@ const Sidebar = () => {
       <NavigationContainer>
         <NavSection>
           <NavItemLink to="/" end>
-            <FaHome /> 홈
+            <FaHome /> {t('sidebar.navigation.home')}
           </NavItemLink>
           <NavItemLink to="/notes">
-            <FaStickyNote /> 전체 노트
+            <FaStickyNote /> {t('sidebar.navigation.allNotes')}
           </NavItemLink>
           <NavItemLink to="/voice">
-            <FaMicrophone /> 음성 노트
+            <FaMicrophone /> {t('sidebar.navigation.voiceNotes')}
           </NavItemLink>
         </NavSection>
         
         <NavSection>
-          <SectionTitle>보관함</SectionTitle>
+          <SectionTitle>{t('sidebar.storage.title')}</SectionTitle>
           <NavItemLink to="/shared">
-            <FaShareAlt /> 공유한 노트
+            <FaShareAlt /> {t('sidebar.storage.shared')}
           </NavItemLink>
           <NavItemLink to="/shared-with-me">
-            <FaFolderOpen /> 공유받은 노트
+            <FaFolderOpen /> {t('sidebar.storage.sharedWithMe')}
           </NavItemLink>
           <NavItemLink to="/trash">
-            <FaTrash /> 휴지통
+            <FaTrash /> {t('sidebar.storage.trash')}
           </NavItemLink>
         </NavSection>
       </NavigationContainer>
       
       <FooterSection>
         <UserInfo>
-          정상 작동
+          {t('sidebar.status.operational')}
         </UserInfo>
       </FooterSection>
     </SidebarContainer>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { FaSearch, FaBars, FaCalendarAlt, FaSignOutAlt, FaCog, FaBell, FaUser } from 'react-icons/fa';
 import { toggleSidebar, toggleCalendar } from '../../redux/slices/uiSlice';
@@ -83,185 +84,151 @@ const SearchInput = styled.input`
   }
   
   &::placeholder {
-    color: #9E9E9E;
+    color: ${logoColors.darkGray};
+    opacity: 0.6;
   }
 `;
 
-const SearchIcon = styled.span`
+const SearchIcon = styled.div`
   position: absolute;
-  left: 16px;
+  left: 18px;
   top: 50%;
   transform: translateY(-50%);
   color: ${logoColors.cyan};
-  pointer-events: none;
   font-size: 16px;
+  pointer-events: none;
 `;
 
 const RightSection = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 16px;
 `;
 
 const ActionButton = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: ${logoColors.darkGray};
-  font-size: 18px;
-  width: 44px;
-  height: 44px;
-  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: linear-gradient(135deg, ${logoColors.darkGray} 0%, #2C2C2C 100%);
+  color: ${logoColors.white};
+  cursor: pointer;
   transition: all 0.3s ease;
-  position: relative;
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
   
   &:hover {
-    background: linear-gradient(135deg, ${logoColors.magenta}15, ${logoColors.cyan}15);
-    color: ${logoColors.magenta};
+    background: linear-gradient(135deg, ${logoColors.magenta} 0%, ${logoColors.cyan} 100%);
     transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
   }
   
-  &:active {
-    transform: translateY(0);
-  }
-`;
-
-const NotificationButton = styled(ActionButton)`
-  &::after {
-    content: '';
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 8px;
-    height: 8px;
-    background: ${logoColors.magenta};
-    border-radius: 50%;
-    opacity: ${({ hasNotification }) => hasNotification ? 1 : 0};
-    transition: opacity 0.3s ease;
+  svg {
+    font-size: 16px;
   }
 `;
 
 const UserSection = styled.div`
   position: relative;
-  margin-left: 8px;
 `;
 
 const UserAvatar = styled.div`
   width: 40px;
   height: 40px;
-  background: linear-gradient(135deg, ${logoColors.cyan} 0%, ${logoColors.lime} 100%);
+  background: linear-gradient(135deg, ${logoColors.lime} 0%, ${logoColors.cyan} 100%);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
+  font-size: 16px;
   cursor: pointer;
-  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 8px 100%);
   transition: all 0.3s ease;
-  box-shadow: 0 2px 12px rgba(0, 188, 212, 0.3);
+  clip-path: polygon(6px 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
   
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 188, 212, 0.4);
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(139, 195, 74, 0.4);
   }
 `;
 
 const UserDropdown = styled.div`
   position: absolute;
-  top: 50px;
+  top: 100%;
   right: 0;
-  min-width: 220px;
+  margin-top: 8px;
   background: ${logoColors.white};
-  border-radius: 0;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
-  z-index: 100;
-  overflow: hidden;
-  opacity: ${({ isOpen }) => (isOpen ? '1' : '0')};
-  visibility: ${({ isOpen }) => (isOpen ? 'visible' : 'hidden')};
-  transform: ${({ isOpen }) => (isOpen ? 'translateY(0)' : 'translateY(-10px)')};
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  min-width: 220px;
+  opacity: ${props => props.isOpen ? 1 : 0};
+  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  transform: ${props => props.isOpen ? 'translateY(0)' : 'translateY(-10px)'};
   transition: all 0.3s ease;
-  border-top: 3px solid transparent;
-  border-image: linear-gradient(90deg, ${logoColors.magenta}, ${logoColors.cyan}) 1;
-`;
-
-const DropdownHeader = styled.div`
-  padding: 20px;
-  background: linear-gradient(135deg, ${logoColors.darkGray} 0%, #2C2C2C 100%);
-  color: white;
-  text-align: center;
-  position: relative;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, ${logoColors.magenta}, ${logoColors.cyan});
-  }
-`;
-
-const DropdownUserName = styled.div`
-  font-weight: 600;
-  font-size: 16px;
-  margin-bottom: 4px;
-`;
-
-const DropdownUserEmail = styled.div`
-  font-size: 13px;
-  opacity: 0.8;
-  color: ${logoColors.cyan};
-`;
-
-const DropdownItem = styled.div`
-  padding: 14px 20px;
-  display: flex;
-  align-items: center;
-  color: ${logoColors.darkGray};
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  
-  &:hover {
-    background: linear-gradient(90deg, ${logoColors.magenta}10, ${logoColors.cyan}10);
-    color: ${logoColors.magenta};
-    
-    &::before {
-      opacity: 1;
-      width: 4px;
-    }
-  }
+  z-index: 1000;
+  clip-path: polygon(0 8px, 8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%);
   
   &::before {
     content: '';
     position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 0;
-    background: ${logoColors.magenta};
-    transition: all 0.3s ease;
-    opacity: 0;
+    top: -6px;
+    right: 20px;
+    width: 12px;
+    height: 12px;
+    background: ${logoColors.white};
+    transform: rotate(45deg);
+    border-top: 1px solid ${logoColors.lightGray};
+    border-left: 1px solid ${logoColors.lightGray};
+  }
+`;
+
+const DropdownHeader = styled.div`
+  padding: 16px 20px;
+  border-bottom: 1px solid ${logoColors.lightGray};
+  background: linear-gradient(135deg, ${logoColors.darkGray}10, ${logoColors.cyan}10);
+`;
+
+const DropdownUserName = styled.div`
+  font-weight: 600;
+  color: ${logoColors.darkGray};
+  font-size: 14px;
+`;
+
+const DropdownUserEmail = styled.div`
+  color: ${logoColors.darkGray};
+  opacity: 0.7;
+  font-size: 12px;
+  margin-top: 4px;
+`;
+
+const DropdownItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  color: ${logoColors.darkGray};
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  
+  &:hover {
+    background: linear-gradient(90deg, ${logoColors.cyan}20, ${logoColors.lime}20);
+    transform: translateX(4px);
   }
   
   svg {
-    margin-right: 12px;
-    font-size: 16px;
+    font-size: 14px;
+    color: ${logoColors.cyan};
   }
 `;
 
 const StatusIndicator = styled.div`
+  padding: 12px 20px;
+  border-top: 1px solid ${logoColors.lightGray};
+  font-size: 12px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 20px;
-  background: #F8F9FA;
-  border-top: 1px solid #E9ECEF;
-  font-size: 12px;
   color: ${logoColors.darkGray};
   
   &::before {
@@ -280,6 +247,7 @@ const StatusIndicator = styled.div`
 `;
 
 const Header = () => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user } = useSelector(state => state.auth);
@@ -342,17 +310,17 @@ const Header = () => {
   return (
     <HeaderContainer>
       <LeftSection>
-        <ActionButton onClick={handleToggleSidebar} title="메뉴 토글">
+        <ActionButton onClick={handleToggleSidebar} title={t('header.search.toggleMenu')}>
           <FaBars />
         </ActionButton>
-        <HeaderTitle>AI 학습 지원 시스템</HeaderTitle>
+        <HeaderTitle>{t('header.title')}</HeaderTitle>
       </LeftSection>
       
       <SearchContainer>
         <form onSubmit={handleSearchSubmit}>
           <SearchInput
             type="text"
-            placeholder="노트를 검색하세요..."
+            placeholder={t('header.search.placeholder')}
             value={searchText}
             onChange={handleSearchChange}
           />
@@ -363,7 +331,7 @@ const Header = () => {
       </SearchContainer>
       
       <RightSection>
-        <ActionButton onClick={handleToggleCalendar} title="캘린더 토글">
+        <ActionButton onClick={handleToggleCalendar} title={t('header.search.toggleCalendar')}>
           <FaCalendarAlt />
         </ActionButton>
         
@@ -374,20 +342,20 @@ const Header = () => {
             
           <UserDropdown isOpen={dropdownOpen}>
             <DropdownHeader>
-              <DropdownUserName>{user?.username || '사용자'}</DropdownUserName>
-              <DropdownUserEmail>{user?.email || 'user@example.com'}</DropdownUserEmail>
+              <DropdownUserName>{user?.username || t('header.user.defaultUsername')}</DropdownUserName>
+              <DropdownUserEmail>{user?.email || t('header.user.defaultEmail')}</DropdownUserEmail>
             </DropdownHeader>
             
             <DropdownItem onClick={handleProfileClick}>
-              <FaCog /> 프로필 설정
+              <FaCog /> {t('header.user.profile')}
             </DropdownItem>
             
             <DropdownItem onClick={handleLogoutClick}>
-              <FaSignOutAlt /> 로그아웃
+              <FaSignOutAlt /> {t('header.user.logout')}
             </DropdownItem>
             
             <StatusIndicator>
-              온라인 상태
+              {t('header.user.onlineStatus')}
             </StatusIndicator>
           </UserDropdown>
         </UserSection>

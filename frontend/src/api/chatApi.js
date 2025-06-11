@@ -26,6 +26,27 @@ const chatApi = {
     }
   },
 
+  // 추천 질문 생성
+  generateQuestions: async (noteId, noteContent) => {
+    try {
+      const response = await axiosInstance.post(`/chat/questions/${noteId}`, {
+        content: noteContent
+      });
+      return response.data;
+    } catch (error) {
+      console.error('추천 질문 생성 오류:', error);
+      // 실패 시 기본 질문들 반환
+      return {
+        success: false,
+        questions: [
+          "이 노트를 요약해주세요",
+          "핵심 키워드를 알려주세요", 
+          "이 내용을 자세히 설명해주세요"
+        ]
+      };
+    }
+  },
+
   // 노트 요약 요청
   summarizeNote: async (noteId) => {
     try {

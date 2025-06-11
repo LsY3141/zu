@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import { FaShare, FaTimes, FaEnvelope, FaUser } from 'react-icons/fa';
 import { shareNote } from '../../redux/slices/noteSlice';
 import { showNotification } from '../../redux/slices/uiSlice';
@@ -91,6 +92,11 @@ const CloseButton = styled.button`
     background-color: ${({ theme }) => theme.colors.background};
     color: ${({ theme }) => theme.colors.text};
   }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;
 
 const ModalBody = styled.div`
@@ -146,6 +152,7 @@ const ModalFooter = styled.div`
 `;
 
 const ShareModal = ({ isOpen, onClose, note }) => {
+  const { t } = useTranslation();
   const dispatch = useDispatch();
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
@@ -157,8 +164,10 @@ const ShareModal = ({ isOpen, onClose, note }) => {
   };
   
   const handleEmailChange = (e) => {
-    setEmail(e.target.value);
-    if (emailError) {
+    const value = e.target.value;
+    setEmail(value);
+    
+    if (emailError && value.trim()) {
       setEmailError('');
     }
   };
@@ -166,14 +175,13 @@ const ShareModal = ({ isOpen, onClose, note }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // 이메일 유효성 검사
     if (!email.trim()) {
-      setEmailError('이메일을 입력해주세요.');
+      setEmailError(t('login.form.email.required'));
       return;
     }
     
     if (!validateEmail(email.trim())) {
-      setEmailError('유효한 이메일 주소를 입력해주세요.');
+      setEmailError(t('login.form.email.invalid'));
       return;
     }
     
@@ -186,7 +194,7 @@ const ShareModal = ({ isOpen, onClose, note }) => {
       })).unwrap();
       
       dispatch(showNotification({
-        message: `${email}님과 노트가 공유되었습니다.`,
+        message: t('shareModal.messages.success', { email }),
         type: 'success'
       }));
       
@@ -197,7 +205,7 @@ const ShareModal = ({ isOpen, onClose, note }) => {
       
     } catch (error) {
       dispatch(showNotification({
-        message: error.message || '공유 중 오류가 발생했습니다.',
+        message: error.message || t('shareModal.messages.error'),
         type: 'error'
       }));
     } finally {
@@ -227,7 +235,7 @@ const ShareModal = ({ isOpen, onClose, note }) => {
         <ModalHeader>
           <ModalTitle>
             <FaShare />
-            노트 공유하기
+            {t('shareModal.title')}
           </ModalTitle>
           <CloseButton onClick={handleClose} disabled={loading}>
             <FaTimes />
@@ -241,16 +249,16 @@ const ShareModal = ({ isOpen, onClose, note }) => {
           </NoteInfo>
           
           <FormSection>
-            <SectionTitle>공유받을 사용자</SectionTitle>
+            <SectionTitle>{t('shareModal.form.recipient')}</SectionTitle>
             <SectionDescription>
-              공유받을 사용자의 이메일 주소를 입력하세요. 해당 사용자가 서비스에 가입되어 있어야 합니다.
+              {t('shareModal.form.recipientDescription')}
             </SectionDescription>
             
             <form onSubmit={handleSubmit}>
               <Input
                 type="email"
-                label="이메일 주소"
-                placeholder="example@email.com"
+                label={t('shareModal.form.emailLabel')}
+                placeholder={t('shareModal.form.emailPlaceholder')}
                 value={email}
                 onChange={handleEmailChange}
                 error={emailError}
@@ -276,14 +284,14 @@ const ShareModal = ({ isOpen, onClose, note }) => {
             onClick={handleClose}
             disabled={loading}
           >
-            취소
+            {t('shareModal.actions.cancel')}
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={loading || !email.trim()}
             icon={<FaShare />}
           >
-            {loading ? '공유 중...' : '공유하기'}
+            {loading ? t('shareModal.actions.sharing') : t('shareModal.actions.share')}
           </Button>
         </ModalFooter>
       </ModalContainer>

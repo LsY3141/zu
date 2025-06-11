@@ -22,6 +22,7 @@ import {
 } from 'react-icons/fa';
 import { updateProfile, changePassword } from '../redux/slices/authSlice';
 import { showNotification } from '../redux/slices/uiSlice';
+import { getUserStats } from '../redux/slices/userSlice'; // 사용자 통계 액션 추가
 import Input from '../components/shared/Input';
 import Button from '../components/shared/Button';
 import Select from '../components/shared/Select';
@@ -563,6 +564,7 @@ const Profile = () => {
   const { t } = useTranslation(); // 번역 함수
   const dispatch = useDispatch();
   const { user, loading, error, message } = useSelector(state => state.auth);
+  const { stats, loading: statsLoading } = useSelector(state => state.user || {});
   
   const [profileData, setProfileData] = useState({
     username: '',
@@ -595,6 +597,11 @@ const Profile = () => {
       });
     }
   }, [user]);
+
+  // 사용자 통계 로드
+  useEffect(() => {
+    dispatch(getUserStats());
+  }, [dispatch]);
   
   useEffect(() => {
     if (message) {
@@ -707,18 +714,16 @@ const Profile = () => {
     const now = new Date();
     const diffDays = Math.floor((now - createdDate) / (1000 * 60 * 60 * 24));
     
-    if (diffDays < 30) return t('profile.memberSince', { days: diffDays });
-    if (diffDays < 365) return t('profile.memberSince', { days: Math.floor(diffDays / 30) * 30 });
-    return t('profile.memberSince', { days: Math.floor(diffDays / 365) * 365 });
+    return t('profile.memberSince', { days: diffDays });
   };
   
-  // 통계 계산
-  const totalNotes = user?.usage?.totalNotes || 0;
-  const speechMinutes = user?.usage?.speechProcessingMinutes || 0;
-  const memberDays = user?.createdAt 
-    ? Math.floor((new Date() - new Date(user.createdAt)) / (1000 * 60 * 60 * 24))
+  // 통계 데이터 계산 - stats에서 가져오기
+  const totalNotes = stats?.total_notes || user?.total_notes || 0;
+  const speechMinutes = Math.round(stats?.speech_processing_minutes || user?.speech_processing_minutes || 0);
+  const memberDays = user?.created_at 
+    ? Math.floor((new Date() - new Date(user.created_at)) / (1000 * 60 * 60 * 24))
     : 0;
-  const monthlyNotes = user?.usage?.monthlyStats?.[new Date().toISOString().slice(0, 7)]?.notes || 0;
+  const monthlyNotes = stats?.current_notes_count || 0;
   
   return (
     <ProfileContainer>
@@ -728,9 +733,6 @@ const Profile = () => {
             <AvatarContainer>
               {getInitials(user?.username)}
             </AvatarContainer>
-            <AvatarEditButton title={t('profile.avatarEdit', { defaultValue: '프로필 사진 변경' })}>
-              <FaCamera />
-            </AvatarEditButton>
           </ProfileAvatar>
           
           <ProfileInfo>
@@ -744,7 +746,7 @@ const Profile = () => {
             </div>
             <div className="member-since">
               <FaCalendarDay />
-              {getMemberSince(user?.createdAt)}
+              {getMemberSince(user?.created_at)}
             </div>
           </ProfileInfo>
         </HeaderContent>
