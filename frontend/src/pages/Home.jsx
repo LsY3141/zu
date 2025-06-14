@@ -500,7 +500,7 @@ const Home = () => {
               }}
               icon={<FaArrowRight />}
             >
-              X_X
+              Click
             </Button>
           </div>
         </CTASection>

@@ -179,6 +179,7 @@ exports.getNotes = async (req, res) => {
   }
 };
 
+
 // 노트 상세 조회
 exports.getNoteById = async (req, res) => {
   try {
@@ -202,9 +203,88 @@ exports.getNoteById = async (req, res) => {
       isVoice: note.is_voice === 1,
       audioUrl: note.audio_url,
       tags: note.tags || [],
-      createdAt: note.created_at, // DB에 이미 한국 시간으로 저장되어 있음
-      updatedAt: note.updated_at   // DB에 이미 한국 시간으로 저장되어 있음
+      createdAt: note.created_at,
+      updatedAt: note.updated_at
     };
+
+    // ✅ 로그 추가
+    console.log('🔍 노트 기본 정보:', {
+      id: formattedNote._id,
+      title: formattedNote.title,
+      isVoice: formattedNote.isVoice,
+      is_voice_raw: note.is_voice
+    });
+    
+    // ✅ 음성 노트인 경우 분석 결과 조회
+    if (formattedNote.isVoice) {
+      console.log('🔍 음성 노트 감지 - 분석 결과 조회 시작, noteId:', id);
+      
+      try {
+        // 단계별로 쿼리 실행하여 디버깅
+        
+        // 1. transcriptions 테이블에서 연결된 transcription 찾기
+        const transcriptionQuery = `
+          SELECT id FROM transcriptions WHERE note_id = ?
+        `;
+        const transcriptions = await db.query(transcriptionQuery, [id]);
+        console.log('📋 연결된 transcription:', transcriptions.length, '개');
+        
+        if (transcriptions.length > 0) {
+          const transcriptionId = transcriptions[0].id;
+          console.log('🎯 transcription ID:', transcriptionId);
+          
+          // 2. 요약 조회
+          const summaryQuery = `
+            SELECT summary FROM transcription_results WHERE transcription_id = ?
+          `;
+          const summaryResult = await db.query(summaryQuery, [transcriptionId]);
+          console.log('📊 요약 조회 결과:', summaryResult.length, '개');
+          if (summaryResult.length > 0 && summaryResult[0].summary) {
+            formattedNote.summary = summaryResult[0].summary;
+            console.log('✅ 요약 데이터 설정됨:', formattedNote.summary.substring(0, 50));
+          }
+          
+          // 3. 키워드 조회
+          const keywordsQuery = `
+            SELECT phrase FROM key_phrases WHERE transcription_id = ?
+          `;
+          const keywordResults = await db.query(keywordsQuery, [transcriptionId]);
+          console.log('🔍 키워드 조회 결과:', keywordResults.length, '개');
+          if (keywordResults.length > 0) {
+            const keywords = keywordResults.map(k => k.phrase).join(', ');
+            formattedNote.keywords = keywords;
+            console.log('✅ 키워드 데이터 설정됨:', keywords);
+          }
+          
+          // 4. 번역 조회 (컬럼명 수정)
+          const translationQuery = `
+            SELECT * FROM translations WHERE transcription_id = ?
+          `;
+          const translationResults = await db.query(translationQuery, [transcriptionId]);
+          console.log('🌍 번역 조회 결과:', translationResults.length, '개');
+          console.log('🌍 번역 컬럼 확인:', translationResults[0]); // 실제 컬럼명 확인
+
+          if (translationResults.length > 0 && translationResults[0].text) {
+            formattedNote.translation = translationResults[0].text;
+            // target_language 대신 language 컬럼 사용
+            formattedNote.translationLanguage = translationResults[0].language;
+            console.log('🌍 번역 데이터 설정됨:', translationResults[0].text.substring(0, 50));
+          }
+        }
+        
+        console.log('🎉 최종 음성 노트 데이터:', {
+          hasSummary: !!formattedNote.summary,
+          hasKeywords: !!formattedNote.keywords,
+          hasTranslation: !!formattedNote.translation
+        });
+        
+      } catch (analysisError) {
+        console.error('❌ 음성 분석 결과 조회 오류:', analysisError);
+        // 분석 결과 조회 실패해도 기본 노트 정보는 반환
+      }
+    } else {
+      console.log('❌ 음성 노트가 아님 - 분석 결과 조회 스킵');
+    }
     
     res.status(200).json({
       success: true,
@@ -219,6 +299,7 @@ exports.getNoteById = async (req, res) => {
     });
   }
 };
+
 
 // 노트 수정 함수 권한 체크 추가
 exports.updateNote = async (req, res) => {

@@ -1,6 +1,7 @@
-// src/components/shared/ChatBot.jsx - 영어 전용 버전
+// src/components/shared/ChatBot.jsx - 다크 테마 버전
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useTranslation } from 'react-i18next';
 import styled, { keyframes } from 'styled-components';
 import { 
   FaComments, 
@@ -39,18 +40,18 @@ const ChatBotContainer = styled.div`
 const ChatWindow = styled.div`
   width: 400px;
   height: 500px;
-  background: ${({ theme }) => theme.colors.background};
+  background: #1a1a1a;
   border-radius: ${({ theme }) => theme.borderRadius.large};
   box-shadow: ${({ theme }) => theme.boxShadow.modal};
   display: flex;
   flex-direction: column;
   animation: ${fadeIn} 0.3s ease-out;
   margin-bottom: 10px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid #333;
 `;
 
 const ChatHeader = styled.div`
-  background: ${({ theme }) => theme.colors.primary};
+  background: #2d2d2d;
   color: white;
   padding: 15px 20px;
   border-radius: ${({ theme }) => theme.borderRadius.large} ${({ theme }) => theme.borderRadius.large} 0 0;
@@ -63,6 +64,7 @@ const ChatTitle = styled.h3`
   margin: 0;
   font-size: 16px;
   font-weight: 600;
+  color: white;
 `;
 
 const CloseButton = styled.button`
@@ -81,15 +83,16 @@ const CloseButton = styled.button`
 
 const ChatActions = styled.div`
   padding: 10px 20px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px solid #333;
+  background: #1a1a1a;
   display: flex;
   justify-content: flex-end;
 `;
 
 const ClearButton = styled.button`
   background: none;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.textSecondary};
+  border: 1px solid #444;
+  color: #ccc;
   cursor: pointer;
   padding: 5px 10px;
   border-radius: ${({ theme }) => theme.borderRadius.small};
@@ -106,6 +109,7 @@ const ClearButton = styled.button`
 const ChatMessages = styled.div`
   flex: 1;
   padding: 20px;
+  background: #1a1a1a;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -122,16 +126,14 @@ const MessageBubble = styled.div`
   max-width: 80%;
   padding: 12px 16px;
   border-radius: 18px;
-  background-color: ${({ isUser, theme }) => 
-    isUser ? theme.colors.primary : theme.colors.cardBackground
+  background-color: ${({ isUser }) => 
+    isUser ? '#4A5568' : '#2D3748'
   };
-  color: ${({ isUser, theme }) => 
-    isUser ? 'white' : theme.colors.text
-  };
+  color: white;
   word-wrap: break-word;
   font-size: 14px;
   line-height: 1.4;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 `;
 
 const MessageMeta = styled.div`
@@ -139,7 +141,7 @@ const MessageMeta = styled.div`
   align-items: center;
   margin-top: 5px;
   font-size: 12px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: #999;
   gap: 5px;
 `;
 
@@ -148,14 +150,15 @@ const LoadingMessage = styled.div`
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background-color: ${({ theme }) => theme.colors.cardBackground};
+  background-color: #2D3748;
   border-radius: 18px;
   font-size: 14px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: #ccc;
 `;
 
 const SpinnerIcon = styled(FaRobot)`
   animation: ${spin} 1s linear infinite;
+  color: #ccc;
 `;
 
 const EmptyState = styled.div`
@@ -164,24 +167,27 @@ const EmptyState = styled.div`
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  color: #999;
 `;
 
 const EmptyStateIcon = styled(FaComments)`
   font-size: 48px;
   margin-bottom: 15px;
   opacity: 0.5;
+  color: #666;
 `;
 
 const EmptyStateText = styled.p`
   text-align: center;
   max-width: 200px;
   line-height: 1.5;
+  color: white;
 `;
 
 const ChatInput = styled.div`
   padding: 20px;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  border-top: 1px solid #333;
+  background: #1a1a1a;
   display: flex;
   gap: 10px;
 `;
@@ -189,26 +195,30 @@ const ChatInput = styled.div`
 const InputField = styled.input`
   flex: 1;
   padding: 12px 16px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid #444;
   border-radius: 25px;
   outline: none;
   font-size: 14px;
-  background-color: ${({ theme }) => theme.colors.background};
-  color: ${({ theme }) => theme.colors.text};
+  background-color: #2D3748;
+  color: white;
+  
+  &::placeholder {
+    color: #999;
+  }
   
   &:focus {
-    border-color: ${({ theme }) => theme.colors.primary};
+    border-color: #4A5568;
   }
   
   &:disabled {
-    background-color: ${({ theme }) => theme.colors.disabled};
+    background-color: #1a1a1a;
     cursor: not-allowed;
   }
 `;
 
 const SendButton = styled.button`
   padding: 12px 16px;
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: #4A5568;
   color: white;
   border: none;
   border-radius: 50%;
@@ -219,12 +229,12 @@ const SendButton = styled.button`
   justify-content: center;
   
   &:hover:not(:disabled) {
-    background-color: ${({ theme }) => theme.colors.primaryDark};
+    background-color: #2D3748;
     transform: scale(1.05);
   }
   
   &:disabled {
-    background-color: ${({ theme }) => theme.colors.disabled};
+    background-color: #1a1a1a;
     cursor: not-allowed;
   }
 `;
@@ -233,7 +243,7 @@ const ChatToggleButton = styled.button`
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background-color: ${({ theme }) => theme.colors.primary};
+  background-color: #4A5568;
   color: white;
   border: none;
   cursor: pointer;
@@ -245,13 +255,13 @@ const ChatToggleButton = styled.button`
   transition: all 0.2s;
   
   &:hover {
-    background-color: ${({ theme }) => theme.colors.primaryDark};
+    background-color: #2D3748;
     transform: scale(1.1);
   }
 `;
 
 const formatTime = (timestamp) => {
-  return new Date(timestamp).toLocaleTimeString('en-US', {
+  return new Date(timestamp).toLocaleTimeString('ko-KR', {
     hour: '2-digit',
     minute: '2-digit'
   });
@@ -259,6 +269,7 @@ const formatTime = (timestamp) => {
 
 const ChatBot = ({ noteId, noteTitle, noteContent }) => {
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef(null);
   
@@ -294,7 +305,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
     if (isOpen && messages.length === 0) {
       const welcomeMessage = {
         id: Date.now(),
-        text: `Hello! If you have any questions about the "${noteTitle}" note, feel free to ask. I'll analyze the note content and provide answers.`,
+        text: t('chatBot.welcome', { noteTitle }),
         isUser: false,
         timestamp: new Date().toISOString()
       };
@@ -308,7 +319,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
         }
       });
     }
-  }, [isOpen, messages.length, noteTitle, noteId, dispatch]);
+  }, [isOpen, messages.length, noteTitle, noteId, dispatch, t]);
 
   const handleToggleChat = () => {
     dispatch(toggleChat({ noteId }));
@@ -342,7 +353,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
       
       console.log('=== API response received ===', result);
       
-      // 🔥 This is key! Add AI response to screen
+      // Add AI response to screen
       if (result.success && result.response && result.response.message) {
         dispatch({
           type: 'chat/addAIResponse',
@@ -359,7 +370,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
           type: 'chat/addAIResponse',
           payload: {
             noteId,
-            response: 'I received a response but the format is not correct.'
+            response: t('chatBot.status.error')
           }
         });
       }
@@ -371,7 +382,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
         type: 'chat/addAIResponse',
         payload: {
           noteId,
-          response: 'Sorry, there is a temporary issue with the service. Please try again later.'
+          response: t('chatBot.status.error')
         }
       });
     }
@@ -385,10 +396,10 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
   };
 
   const handleClearHistory = () => {
-    if (window.confirm('Are you sure you want to delete all chat history?')) {
+    if (window.confirm(t('chatBot.actions.confirmClear'))) {
       dispatch(clearLocalChatHistory({ noteId }));
       dispatch(showNotification({
-        message: 'Chat history has been deleted.',
+        message: t('chatBot.messages.historyCleared'),
         type: 'success'
       }));
     }
@@ -408,7 +419,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
     <ChatBotContainer>
       <ChatWindow>
         <ChatHeader>
-          <ChatTitle>AI Assistant</ChatTitle>
+          <ChatTitle>{t('chatBot.title')}</ChatTitle>
           <CloseButton onClick={handleCloseChat}>
             <FaTimes />
           </CloseButton>
@@ -416,7 +427,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
 
         <ChatActions>
           <ClearButton onClick={handleClearHistory}>
-            <FaTrash /> Clear History
+            <FaTrash /> {t('chatBot.actions.clearHistory')}
           </ClearButton>
         </ChatActions>
 
@@ -425,7 +436,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
             <EmptyState>
               <EmptyStateIcon />
               <EmptyStateText>
-                No conversations yet. Ask me anything about the note!
+                {t('chatBot.messages.emptyState')}
               </EmptyStateText>
             </EmptyState>
           ) : (
@@ -446,7 +457,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
                 <Message isUser={false}>
                   <LoadingMessage>
                     <SpinnerIcon />
-                    AI is thinking of an answer...
+                    {t('chatBot.status.thinking')}
                   </LoadingMessage>
                 </Message>
               )}
@@ -459,7 +470,7 @@ const ChatBot = ({ noteId, noteTitle, noteContent }) => {
         <ChatInput>
           <InputField
             type="text"
-            placeholder="Ask me anything about the note..."
+            placeholder={t('chatBot.input.placeholder')}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}

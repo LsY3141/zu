@@ -124,42 +124,73 @@ exports.checkTranscriptionStatus = async (req, res) => {
       results: null // 초기에는 null
     };
     
-    // 작업이 완료되었으면 결과 가져오기
-    if (jobStatus.status === 'COMPLETED' && jobStatus.url) { // jobStatus.url이 null이 아니어야 함
-      console.log('작업 완료됨, 결과 가져오기 시도:', jobStatus.url);
+
+// 작업이 완료되었으면 결과 가져오기
+if (jobStatus.status === 'COMPLETED' && jobStatus.url) {
+  console.log('작업 완료됨, 결과 가져오기 시도:', jobStatus.url);
+  try {
+    const results = await transcribeService.getTranscriptionResults(jobStatus.url);
+    response.results = results;
+    response.job.status = 'COMPLETED';
+    response.job.progress = 100;
+    
+    // DB에 변환 결과 저장
+    if (transcription && results?.text) {
+      await transcriptionModel.saveTranscriptionResults(transcription.id, {
+        text: results.text,
+        summary: null
+      });
+      
+      // 화자 구분 결과 저장
+      if (results.speakers && results.speakers.length > 0) {
+        await transcriptionModel.saveSpeakerSegments(transcription.id, results.speakers);
+      }
+
+      // ✅ 추가: 변환 완료 후 자동으로 분석 실행
+      console.log('🔥 변환 완료 - 자동 분석 시작');
       try {
-        const results = await transcribeService.getTranscriptionResults(jobStatus.url);
-        response.results = results; // 여기에 파싱된 전체 텍스트와 화자 정보가 담겨야 함
-        response.job.status = 'COMPLETED'; // 상태 최종 확정
-        response.job.progress = 100; // 진행률 100으로 확정
+        const comprehendService = require('../services/comprehendService');
         
-        // DB에 변환 결과 저장 (transcription.id와 results.text가 존재해야 함)
-        if (transcription && results?.text) { // results?.text 안전한 접근
-          // transcriptionModel.saveTranscriptionResults가 text와 summary를 저장
-          await transcriptionModel.saveTranscriptionResults(transcription.id, {
-            text: results.text,
-            // summary는 나중에 analyzeTranscription에서 업데이트되므로 여기서는 null 유지
-            summary: null
-          });
-          
-          // 화자 구분 결과 저장
-          if (results.speakers && results.speakers.length > 0) {
-            await transcriptionModel.saveSpeakerSegments(transcription.id, results.speakers);
-          }
+        // 요약 생성
+        const summaryText = await comprehendService.summarizeText(results.text);
+        console.log('✅ 요약 생성 완료:', summaryText?.substring(0, 100));
+        
+        // 키워드 추출
+        const phrases = await comprehendService.extractKeyPhrases(results.text);
+        console.log('✅ 키워드 추출 완료:', phrases?.slice(0, 5));
+        
+        // DB에 분석 결과 저장
+        if (summaryText) {
+          await db.query(
+            'UPDATE transcription_results SET summary = ? WHERE transcription_id = ?',
+            [summaryText, transcription.id]
+          );
         }
         
-        console.log('변환 결과 가져오기 및 DB 저장 성공:', {
-          textLength: results.text ? results.text.length : 0,
-          speakersCount: results.speakers ? results.speakers.length : 0
-        });
-      } catch (resultError) {
-        console.error('결과 가져오기 오류:', resultError);
-        // 결과 가져오기 실패해도 완료 상태는 전달, 대신 results는 null
-        response.job.status = 'COMPLETED';
-        response.job.progress = 100;
-        response.results = null; // 오류 발생 시 results는 null로 유지
+        if (phrases && phrases.length > 0) {
+          // 기존 키워드 삭제 후 새로 저장
+          await db.query('DELETE FROM key_phrases WHERE transcription_id = ?', [transcription.id]);
+          await transcriptionModel.saveKeyPhrases(transcription.id, phrases);
+        }
+        
+        console.log('🎉 자동 분석 완료');
+      } catch (analysisError) {
+        console.error('자동 분석 실패:', analysisError);
+        // 분석 실패해도 변환 결과는 반환
       }
     }
+    
+    console.log('변환 결과 가져오기 및 DB 저장 성공:', {
+      textLength: results.text ? results.text.length : 0,
+      speakersCount: results.speakers ? results.speakers.length : 0
+    });
+  } catch (resultError) {
+    console.error('결과 가져오기 오류:', resultError);
+    response.job.status = 'COMPLETED';
+    response.job.progress = 100;
+    response.results = null;
+  }
+}
     
     console.log('최종 응답:', response);
     res.status(200).json(response);
@@ -386,15 +417,35 @@ exports.translateTranscription = async (req, res) => {
 };
 
 
-// 변환 결과를 노트로 저장 (수정됨 - S3 키 처리 개선)
+
+// 변환 결과를 노트로 저장 (수정됨 - 번역 컬럼명 수정)
 exports.saveTranscriptionAsNote = async (req, res) => {
   console.log('노트 저장 컨트롤러 시작');
   try {
     // URL 파라미터가 아닌 body에서 transcriptionId 가져오기
-    const { transcriptionId, title, content, category, tags = [] } = req.body;
+    const { 
+      transcriptionId, 
+      title, 
+      content, 
+      summary, 
+      keywords, 
+      translation, 
+      targetLanguage,
+      category, 
+      tags = [] 
+    } = req.body;
     
-    console.log('저장할 변환 ID:', transcriptionId);
-    console.log('노트 데이터:', { title, content, category, tags });
+    console.log('🔍 받은 요청 데이터:', { 
+      transcriptionId,
+      title, 
+      contentLength: content?.length || 0,
+      summaryLength: summary?.length || 0,
+      keywordsLength: keywords?.length || 0,
+      translationLength: translation?.length || 0,
+      targetLanguage,
+      category, 
+      tags 
+    });
     
     // transcriptionId 필수 검증 추가
     if (!transcriptionId) {
@@ -416,75 +467,116 @@ exports.saveTranscriptionAsNote = async (req, res) => {
       });
     }
     
-    console.log('찾은 변환 작업 정보:', {
-      id: transcription.id,
-      filename: transcription.filename,
-      file_url: transcription.file_url,
-      job_id: transcription.job_id
-    });
-    
-    // S3 URL에서 키 추출하여 서명된 URL 생성
-    let audioUrl = null;
-    try {
-      if (transcription.file_url) {
-        // S3 URL에서 키 추출 (s3://bucket-name/key 형식에서 key 부분만)
-        let s3Key = null;
-        
-        if (transcription.file_url.startsWith('s3://')) {
-          // s3://capstone-educate-s3/1/1733479154352-abc123.wav 형식
-          const urlParts = transcription.file_url.replace('s3://capstone-educate-s3/', '');
-          s3Key = urlParts;
-          console.log('S3 URL에서 추출한 키:', s3Key);
-        } else if (transcription.file_url.startsWith('https://')) {
-          // https://capstone-educate-s3.s3.amazonaws.com/1/123-abc.wav 형식
-          const url = new URL(transcription.file_url);
-          s3Key = url.pathname.substring(1); // 앞의 '/' 제거
-          console.log('HTTPS URL에서 추출한 키:', s3Key);
-        }
-        
-        if (s3Key) {
-          audioUrl = await s3Service.getSignedUrl(s3Key, 24 * 60 * 60);
-          console.log('서명된 URL 생성 성공');
-        } else {
-          console.log('S3 키를 추출할 수 없음, audioUrl을 null로 설정');
-        }
-      } else {
-        console.log('file_url이 없어서 audioUrl을 null로 설정');
-      }
-    } catch (s3Error) {
-      console.error('S3 URL 생성 실패, audioUrl을 null로 설정:', s3Error.message);
-      audioUrl = null;
-    }
-    
-    // 노트 데이터 구성
+    // 생성할 노트 데이터 구성
     const noteData = {
       userId: req.user.id,
-      title,
-      content,
-      category: category || '기본',
+      title: title || '음성 노트',
+      content: content || '',
+      category: category || '음성',
       isVoice: true,
-      audioUrl, // 성공하면 서명된 URL, 실패하면 null
+      audioUrl: transcription.audio_url
     };
     
-    console.log('노트 데이터 구성 완료:', {
-      userId: noteData.userId,
-      title: noteData.title,
-      category: noteData.category,
-      isVoice: noteData.isVoice,
-      hasAudioUrl: !!noteData.audioUrl
-    });
+    console.log('노트 생성 데이터:', noteData);
     
     // 노트 생성
     const noteId = await NoteModel.createNote(noteData);
-    console.log('노트 생성 완료, ID:', noteId);
+    console.log('노트 생성 완료, 노트 ID:', noteId);
     
-    // 태그 처리
-    if (tags.length > 0) {
+    // 태그 추가
+    if (tags && tags.length > 0) {
       await NoteModel.addTagsToNote(noteId, tags);
-      console.log('태그 추가 완료:', tags);
+      console.log('태그 추가 완료');
     }
     
-    // 노트와 변환 작업 연결
+    // ✅ 분석 결과 저장
+    try {
+      console.log('🔍 분석 결과 저장 시작');
+      
+      // 1. 요약 저장
+      if (summary && summary.trim()) {
+        console.log('✅ 요약 저장 중...', summary.substring(0, 100));
+        await db.query(
+          'UPDATE transcription_results SET summary = ? WHERE transcription_id = ?',
+          [summary.trim(), transcription.id]
+        );
+        console.log('✅ 요약 저장 완료');
+      } else {
+        console.log('❌ 요약 데이터 없음');
+      }
+      
+      // 2. 키워드 저장
+      if (keywords && keywords.trim()) {
+        console.log('✅ 키워드 저장 중...', keywords);
+        // 기존 키워드 삭제
+        await db.query(
+          'DELETE FROM key_phrases WHERE transcription_id = ?',
+          [transcription.id]
+        );
+        
+        // 새 키워드 저장
+        const keywordList = keywords.split(',').map(k => k.trim()).filter(k => k);
+        if (keywordList.length > 0) {
+          await transcriptionModel.saveKeyPhrases(transcription.id, keywordList);
+          console.log('✅ 키워드 저장 완료:', keywordList.length, '개');
+        }
+      } else {
+        console.log('❌ 키워드 데이터 없음');
+      }
+      
+      // 3. 번역 결과 저장 (컬럼명 수정)
+      if (translation && translation.trim()) {
+        console.log('🌍 번역 저장 중...', translation.substring(0, 100));
+        console.log('🌍 타겟 언어:', targetLanguage);
+        
+        // 기존 번역 삭제
+        await db.query(
+          'DELETE FROM translations WHERE transcription_id = ?',
+          [transcription.id]
+        );
+        
+        // 새 번역 저장 (target_language 컬럼 제거)
+        if (targetLanguage) {
+          await db.query(
+            'INSERT INTO translations (transcription_id, language, text, created_at) VALUES (?, ?, ?, NOW())',
+            [transcription.id, targetLanguage, translation.trim()]
+          );
+          console.log('🌍 번역 저장 완료');
+        }
+      } else {
+        console.log('🌍 번역 데이터 없음');
+      }
+      
+      // ✅ 저장 후 확인 로그 추가
+      console.log('🔍 저장 후 DB 확인 시작');
+      
+      // 요약 확인
+      const summaryCheck = await db.query(
+        'SELECT summary FROM transcription_results WHERE transcription_id = ?',
+        [transcription.id]
+      );
+      console.log('📊 요약 확인:', summaryCheck[0]?.summary ? '저장됨' : '없음');
+      
+      // 키워드 확인
+      const keywordCheck = await db.query(
+        'SELECT phrase FROM key_phrases WHERE transcription_id = ?',
+        [transcription.id]
+      );
+      console.log('🔍 키워드 확인:', keywordCheck.length, '개');
+      
+      // 번역 확인
+      const translationCheck = await db.query(
+        'SELECT text FROM translations WHERE transcription_id = ?',
+        [transcription.id]
+      );
+      console.log('🌍 번역 확인:', translationCheck[0]?.text ? '저장됨' : '없음');
+      
+    } catch (analysisError) {
+      console.error('❌ 분석 결과 저장 오류:', analysisError);
+      // 분석 결과 저장 실패해도 노트 생성은 계속 진행
+    }
+    
+    // 변환 작업과 노트 연결
     await db.query(
       'UPDATE transcriptions SET note_id = ? WHERE id = ?',
       [noteId, transcription.id]
@@ -498,33 +590,21 @@ exports.saveTranscriptionAsNote = async (req, res) => {
     );
     console.log('사용자 통계 업데이트 완료');
     
-    // 음성 처리 시간 계산 및 사용자 통계 업데이트
-    const audioDuration = calculateAudioDuration(transcription);
-    if (audioDuration > 0) {
-      await db.query(
-        'UPDATE users SET speech_processing_minutes = speech_processing_minutes + ? WHERE id = ?',
-        [audioDuration / 60, req.user.id] // 초를 분으로 변환
-      );
-      
-      // 월간 통계 업데이트
-      const yearMonth = new Date().toISOString().slice(0, 7); // YYYY-MM 형식
-      await db.query(
-        `INSERT INTO monthly_usage (user_id, \`year_month\`, notes_count, speech_minutes)
-        VALUES (?, ?, 1, ?)
-        ON DUPLICATE KEY UPDATE 
-          notes_count = notes_count + 1,
-          speech_minutes = speech_minutes + ?,
-          updated_at = CURRENT_TIMESTAMP`,
-        [req.user.id, yearMonth, audioDuration / 60, audioDuration / 60]
-      );
-      console.log('월간 통계 업데이트 완료');
-    }
-    
-    console.log('노트 저장 완료, DB 업데이트됨');
+    console.log('노트 저장 컨트롤러 완료');
     res.status(201).json({
       success: true,
-      message: '음성 노트가 성공적으로 저장되었습니다.',
-      noteId
+      message: '노트가 성공적으로 저장되었습니다.',
+      noteId: noteId,
+      note: {
+        id: noteId,
+        title: noteData.title,
+        category: noteData.category,
+        isVoice: noteData.isVoice,
+        audioUrl: noteData.audioUrl,
+        hasSummary: !!summary,
+        hasKeywords: !!keywords,
+        hasTranslation: !!translation
+      }
     });
   } catch (error) {
     console.error('노트 저장 오류:', error);
@@ -537,6 +617,7 @@ exports.saveTranscriptionAsNote = async (req, res) => {
     });
   }
 };
+
 
 // 오디오 파일 길이 계산 (초 단위)
 const calculateAudioDuration = (transcription) => {

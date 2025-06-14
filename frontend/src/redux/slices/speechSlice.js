@@ -173,13 +173,20 @@ export const saveTranscriptionAsNote = createAsyncThunk(
 // 새로운 노트 생성 함수
 export const createNoteFromTranscription = createAsyncThunk(
   'speech/createNoteFromTranscription',
-  async ({ transcriptionId, noteData }, { rejectWithValue }) => {
+  async ({ transcriptionId, title, content, summary, keywords, translation, targetLanguage, category, tags }, { rejectWithValue }) => {
     try {
       const response = await axios.post(
         `${speechUrl}/create-note`,
         {
           transcriptionId,
-          ...noteData
+          title,
+          content,
+          summary,
+          keywords,
+          translation,
+          targetLanguage, // ✅ 추가
+          category,
+          tags
         },
         {
           headers: {
