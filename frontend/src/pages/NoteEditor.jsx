@@ -522,10 +522,10 @@ const NoteEditor = ({ isEdit }) => {
   
   // 카테고리 옵션 번역
   const categories = [
-  { value: 'basic', label: t('notes.categories.basic') },     // '기본' → 'basic'
-  { value: 'study', label: t('notes.categories.study') },     // '학습' → 'study'
-  { value: 'meeting', label: t('notes.categories.meeting') }, // '회의' → 'meeting'
-  { value: 'personal', label: t('notes.categories.personal') }, // '개인' → 'personal'
+  { value: 'basic', label: 'Lecture (Study)' },
+  { value: 'meeting', label: 'Ideas' },
+  { value: 'study', label: 'Schedule' },
+  { value: 'personal', label: 'Memo' }
 ];
   
   useEffect(() => {

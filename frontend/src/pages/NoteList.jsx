@@ -626,6 +626,16 @@ const EmptyState = styled.div`
   }
 `;
 
+const getCategoryLabel = (categoryValue) => {
+  switch(categoryValue) {
+    case 'basic': return 'Lecture (Study)';
+    case 'meeting': return 'Ideas';
+    case 'study': return 'Schedule';
+    case 'personal': return 'Memo';
+    default: return categoryValue;
+  }
+};
+
 const NoteListComponent = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -637,15 +647,15 @@ const NoteListComponent = () => {
 
   // 카테고리 옵션 번역
   const CATEGORIES = [
-  { value: '전체', label: t('notes.categories.all') },
-  { value: 'basic', label: t('notes.categories.basic') },       // '기본' → 'basic'
-  { value: 'study', label: t('notes.categories.study') },       // '학습' → 'study'
-  { value: 'meeting', label: t('notes.categories.meeting') },   // '회의' → 'meeting'
-  { value: 'personal', label: t('notes.categories.personal') }, // '개인' → 'personal'
+  { value: '전체', label: 'All' },
+  { value: 'basic', label: 'Lecture (Study)' },
+  { value: 'meeting', label: 'Ideas' },
+  { value: 'study', label: 'Schedule' },
+  { value: 'personal', label: 'Memo' }
 ];
 
 
-  
+
   // 정렬 옵션 번역
   const SORT_OPTIONS = [
     { value: 'createdAt', label: t('notes.sort.createdAt') },
@@ -741,7 +751,7 @@ const NoteListComponent = () => {
             {note.tags?.slice(0, 3).map((tag, index) => (
               <Tag key={index}>{tag}</Tag>
             ))}
-            {note.category && <Tag>{note.category}</Tag>}
+            {note.category && <Tag>{getCategoryLabel(note.category)}</Tag>}
           </Tags>
           <DateDisplay>
             <FaClock />
