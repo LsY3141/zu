@@ -1,7 +1,7 @@
 {
   "login": {
     "logo": {
-      "title": "AI 학습 지원",
+      "title": "연두",
       "subtitle": "Smart Note System"
     },
     "welcome": {
@@ -117,7 +117,7 @@
     }
   },
   "header": {
-    "title": "AI 학습 지원 시스템",
+    "title": "연두 (Yeonsung Educate)",
     "search": {
       "placeholder": "노트를 검색하세요...",
       "toggleMenu": "메뉴 토글",
@@ -149,7 +149,7 @@
   },
   "sidebar": {
     "logo": {
-      "title": "AI 학습 지원",
+      "title": "연두",
       "subtitle": "Smart Note System"
     },
     "actions": {
@@ -172,7 +172,7 @@
     }
   },
   "home": {
-    "title": "AI 학습 지원 시스템",
+    "title": "연두 (Yeonsung Educate)",
     "welcome": "안녕하세요, {{username}}님!",
     "subtitle": "AI 기반 스마트 노트 시스템으로 더욱 효율적인 학습을 경험해보세요",
     "createTextNote": "새 노트 작성",

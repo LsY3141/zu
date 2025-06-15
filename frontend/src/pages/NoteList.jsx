@@ -637,13 +637,15 @@ const NoteListComponent = () => {
 
   // 카테고리 옵션 번역
   const CATEGORIES = [
-    { value: '전체', label: t('notes.categories.all') },
-    { value: '기본', label: t('notes.categories.basic') },
-    { value: '학습', label: t('notes.categories.study') },
-    { value: '회의', label: t('notes.categories.meeting') },
-    { value: '개인', label: t('notes.categories.personal') },
-  ];
+  { value: '전체', label: t('notes.categories.all') },
+  { value: 'basic', label: t('notes.categories.basic') },       // '기본' → 'basic'
+  { value: 'study', label: t('notes.categories.study') },       // '학습' → 'study'
+  { value: 'meeting', label: t('notes.categories.meeting') },   // '회의' → 'meeting'
+  { value: 'personal', label: t('notes.categories.personal') }, // '개인' → 'personal'
+];
 
+
+  
   // 정렬 옵션 번역
   const SORT_OPTIONS = [
     { value: 'createdAt', label: t('notes.sort.createdAt') },

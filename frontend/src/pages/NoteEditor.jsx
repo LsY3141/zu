@@ -511,22 +511,22 @@ const NoteEditor = ({ isEdit }) => {
   const { currentNote, loading, error, message } = useSelector(state => state.notes);
   
   const [formData, setFormData] = useState({
-    title: '',
-    content: '',
-    category: '기본',
-    tags: [],
-  });
+  title: '',
+  content: '',
+  category: 'basic',  // '기본' → 'basic'
+  tags: [],
+});
   
   const [tagInput, setTagInput] = useState('');
   const [formErrors, setFormErrors] = useState({});
   
   // 카테고리 옵션 번역
   const categories = [
-    { value: '기본', label: t('notes.categories.basic') },
-    { value: '학습', label: t('notes.categories.study') },
-    { value: '회의', label: t('notes.categories.meeting') },
-    { value: '개인', label: t('notes.categories.personal') },
-  ];
+  { value: 'basic', label: t('notes.categories.basic') },     // '기본' → 'basic'
+  { value: 'study', label: t('notes.categories.study') },     // '학습' → 'study'
+  { value: 'meeting', label: t('notes.categories.meeting') }, // '회의' → 'meeting'
+  { value: 'personal', label: t('notes.categories.personal') }, // '개인' → 'personal'
+];
   
   useEffect(() => {
     if (isEdit && id) {
@@ -541,15 +541,15 @@ const NoteEditor = ({ isEdit }) => {
   }, [dispatch, isEdit, id]);
   
   useEffect(() => {
-    if (isEdit && currentNote) {
-      setFormData({
-        title: currentNote.title || '',
-        content: currentNote.content || '',
-        category: currentNote.category || '기본',
-        tags: currentNote.tags || [],
-      });
-    }
-  }, [isEdit, currentNote]);
+  if (isEdit && currentNote) {
+    setFormData({
+      title: currentNote.title || '',
+      content: currentNote.content || '',
+      category: currentNote.category || 'basic',  // '기본' → 'basic'
+      tags: currentNote.tags || [],
+    });
+  }
+}, [isEdit, currentNote]);
   
   useEffect(() => {
     if (message) {

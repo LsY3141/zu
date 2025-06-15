@@ -521,12 +521,6 @@ const SharedByMeNotes = () => {
     navigate(`/notes/${noteId}`);
   };
   
-  const handleCopyLink = (e, shareLink) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(shareLink);
-    alert(t('shared.actions.linkCopied'));
-  };
-  
   const handleViewNote = (e, noteId) => {
     e.stopPropagation();
     navigate(`/notes/${noteId}`);
@@ -612,15 +606,7 @@ const SharedByMeNotes = () => {
                   >
                     <FaEye />
                   </ActionButton>
-                  {note.shared?.shareLink && (
-                    <ActionButton 
-                      onClick={(e) => handleCopyLink(e, note.shared.shareLink)} 
-                      title={t('shared.actions.copyLink')}
-                      $color="success"
-                    >
-                      <FaCopy />
-                    </ActionButton>
-                  )}
+                  
                 </ShareActions>
                 
                 <SharedBadge>
@@ -643,16 +629,7 @@ const SharedByMeNotes = () => {
                 
                 <NoteContent>{truncateText(note.content)}</NoteContent>
                 
-                {note.shared?.shareLink && (
-                  <ShareLinkButton
-                    fullWidth
-                    size="small"
-                    onClick={(e) => handleCopyLink(e, note.shared.shareLink)}
-                    icon={<FaLink />}
-                  >
-                    {t('shared.actions.copyLink')}
-                  </ShareLinkButton>
-                )}
+                
                 
                 <NoteFooter>
                   <NoteType $isVoice={note.isVoice}>

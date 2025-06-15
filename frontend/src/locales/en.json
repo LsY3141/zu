@@ -1,7 +1,7 @@
 {
   "login": {
     "logo": {
-      "title": "AI Learning Support",
+      "title": "Yeondu",
       "subtitle": "Smart Note System"
     },
     "welcome": {
@@ -117,7 +117,7 @@
     }
   },
   "header": {
-    "title": "AI Learning Support System",
+    "title": "Yeondu (Yeonsung Educate)",
     "search": {
       "placeholder": "Search notes...",
       "toggleMenu": "Toggle Menu",
@@ -149,7 +149,7 @@
   },
   "sidebar": {
     "logo": {
-      "title": "AI Learning Support",
+      "title": "Yeondu",
       "subtitle": "Smart Note System"
     },
     "actions": {
@@ -172,7 +172,7 @@
     }
   },
   "home": {
-    "title": "AI Learning Support System",
+    "title": "Yeondu (Yeonsung Educate)",
     "welcome": "Hello, {{username}}!",
     "subtitle": "Experience more efficient learning with our AI-powered smart note system",
     "createTextNote": "Create New Note",
