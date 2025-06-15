@@ -148,6 +148,70 @@ const StepTitle = styled.h2`
   }
 `;
 
+const MethodSelector = styled.div`
+  display: flex;
+  gap: 20px;
+  margin-bottom: 40px;
+  justify-content: center;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    gap: 15px;
+  }
+`;
+
+const MethodButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 25px;
+  border: 2px solid ${props => props.active ? colors.primary : colors.lightGray};
+  background: ${props => props.active ? colors.primary : 'white'};
+  color: ${props => props.active ? 'white' : colors.darkGray};
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: ${colors.primary};
+    background: ${props => props.active ? colors.primaryDark : colors.primary + '10'};
+  }
+
+  .icon {
+    font-size: 1.2rem;
+  }
+`;
+
+const FileUploadZone = styled.div`
+  border: 3px dashed ${props => props.isDragging ? colors.primary : colors.lightGray};
+  border-radius: 16px;
+  padding: 60px 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: ${props => props.isDragging ? `${colors.primary}10` : 'white'};
+
+  &:hover {
+    border-color: ${colors.primary};
+    background: ${colors.primary}05;
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 768px) {
+    padding: 40px 20px;
+  }
+`;
+
+const SelectedFileInfo = styled.div`
+  background: ${colors.primary}10;
+  border: 2px solid ${colors.primary}30;
+  border-radius: 12px;
+  padding: 20px;
+  margin-top: 20px;
+  text-align: center;
+`;
+
 const RecordingZone = styled.div`
   display: flex;
   flex-direction: column;
@@ -251,35 +315,6 @@ const ControlButton = styled.button`
   }
 `;
 
-const FileUploadZone = styled.div`
-  border: 3px dashed ${props => props.isDragging ? colors.primary : colors.lightGray};
-  border-radius: 16px;
-  padding: 60px 40px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: ${props => props.isDragging ? `${colors.primary}10` : 'white'};
-
-  &:hover {
-    border-color: ${colors.primary};
-    background: ${colors.primary}05;
-    transform: translateY(-2px);
-  }
-
-  @media (max-width: 768px) {
-    padding: 40px 20px;
-  }
-`;
-
-const SelectedFileInfo = styled.div`
-  background: ${colors.primary}10;
-  border: 2px solid ${colors.primary}30;
-  border-radius: 12px;
-  padding: 20px;
-  margin-top: 20px;
-  text-align: center;
-`;
-
 const ButtonGroup = styled.div`
   display: flex;
   gap: 15px;
@@ -325,266 +360,130 @@ const ActionButton = styled.button`
   }
 `;
 
-const MethodSelector = styled.div`
-  display: flex;
-  gap: 20px;
-  margin-bottom: 40px;
-  justify-content: center;
-
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 15px;
-  }
+const OptionSection = styled.div`
+  background: ${colors.lightGray}10;
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 30px;
 `;
 
-const MethodButton = styled.button`
+const OptionTitle = styled.h3`
+  color: ${colors.darkGray};
+  margin-bottom: 20px;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`;
+
+const OptionGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+`;
+
+const CheckboxOption = styled.label`
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 15px 25px;
-  border: 2px solid ${props => props.active ? colors.primary : colors.lightGray};
-  background: ${props => props.active ? colors.primary : 'white'};
-  color: ${props => props.active ? 'white' : colors.darkGray};
-  border-radius: 12px;
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-
-  &:hover {
-    border-color: ${colors.primary};
-    ${props => !props.active && css`
-      background: ${colors.primary}10;
-    `}
-  }
-
-  .icon {
-    font-size: 1.3rem;
-  }
-`;
-
-const OptionCard = styled.div`
+  padding: 15px;
+  border-radius: 8px;
   background: white;
-  border: 2px solid ${colors.lightGray};
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  cursor: pointer;
+  border: 2px solid transparent;
   transition: all 0.3s ease;
 
   &:hover {
-    border-color: ${colors.primary};
-    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.1);
+    border-color: ${colors.primary}30;
+    background: ${colors.primary}05;
   }
 
-  ${props => props.selected && css`
-    border-color: ${colors.primary};
-    background: ${colors.primary}05;
-  `}
-`;
-
-const CheckboxWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  
   input[type="checkbox"] {
     width: 20px;
     height: 20px;
     accent-color: ${colors.primary};
   }
-`;
 
-const ProcessingContainer = styled.div`
-  max-width: 600px;
-  margin: 0 auto;
-`;
-
-const ProcessingStep = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 20px;
-  margin-bottom: 15px;
-  background: ${props => props.completed ? `${colors.primary}10` : 'white'};
-  border: 2px solid ${props => props.completed ? colors.primary : props.active ? colors.primary : colors.lightGray};
-  border-radius: 12px;
-  transition: all 0.3s ease;
-
-  .icon {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: ${props => props.completed ? colors.primary : props.active ? colors.primary : colors.lightGray};
-    color: white;
-    font-size: 1.5rem;
-    
-    ${props => props.active && !props.completed && css`
-      animation: ${pulse} 2s infinite;
-    `}
-  }
-
-  .content {
+  .option-info {
     flex: 1;
     
     .title {
-      font-size: 1.1rem;
       font-weight: 600;
       color: ${colors.darkGray};
       margin-bottom: 5px;
     }
     
     .description {
-      color: ${colors.darkGray};
       font-size: 0.9rem;
-      margin-bottom: 8px;
-    }
-    
-    .progress-text {
-      color: ${colors.primary};
-      font-size: 0.8rem;
-      font-weight: 500;
+      color: ${colors.lightGray};
     }
   }
 `;
 
-const NoteEditSection = styled.div`
+const LanguageSelector = styled.select`
+  margin-left: 25px;
+  padding: 8px 12px;
+  border: 2px solid ${colors.lightGray};
+  border-radius: 6px;
   background: white;
-  border-radius: 12px;
-  padding: 30px;
-  margin-top: 30px;
-  border: 1px solid ${colors.lightGray};
+  color: ${colors.darkGray};
+  font-size: 0.9rem;
+
+  &:focus {
+    outline: none;
+    border-color: ${colors.primary};
+  }
 `;
 
-const InputGroup = styled.div`
-  margin-bottom: 25px;
-  
-  label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: ${colors.darkGray};
-  }
-  
-  input, textarea, select {
-    width: 100%;
-    padding: 12px 15px;
-    border: 2px solid ${colors.lightGray};
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
+const ProcessingStatus = styled.div`
+  text-align: center;
+  padding: 40px;
+
+  .status-icon {
+    font-size: 4rem;
+    color: ${colors.primary};
+    margin-bottom: 20px;
     
-    &:focus {
-      outline: none;
-      border-color: ${colors.primary};
-    }
-  }
-  
-  textarea {
-    min-height: 120px;
-    resize: vertical;
-  }
-`;
-
-const TagContainer = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-`;
-
-const Tag = styled.span`
-  background: ${colors.primary}20;
-  color: ${colors.primary};
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  
-  .remove {
-    cursor: pointer;
-    font-weight: bold;
-    
-    &:hover {
-      color: #ff5252;
-    }
-  }
-`;
-
-const TagInput = styled.div`
-  display: flex;
-  gap: 10px;
-  margin-top: 10px;
-  
-  input {
-    flex: 1;
-  }
-  
-  button {
-    padding: 8px 15px;
-    background: ${colors.primary};
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    
-    &:hover {
-      background: ${colors.primaryDark};
-    }
-  }
-`;
-
-const AdvancedProgressBar = styled.div`
-  width: 100%;
-  height: 8px;
-  background: ${colors.lightGray};
-  border-radius: 4px;
-  overflow: hidden;
-  margin: 15px 0;
-  position: relative;
-
-  .progress {
-    height: 100%;
-    background: linear-gradient(90deg, ${colors.primary}, ${colors.primaryDark});
-    border-radius: 4px;
-    transition: width 0.3s ease;
-    position: relative;
-    
-    &::after {
+    &.loading::after {
       content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-      animation: ${float} 2s ease-in-out infinite;
+      display: inline-block;
+      width: 60px;
+      height: 60px;
+      margin-left: 20px;
+      border: 4px solid ${colors.lightGray};
+      border-radius: 50%;
+      border-top-color: ${colors.primary};
+      animation: ${spin} 1s linear infinite;
     }
+  }
+
+  .status-text {
+    font-size: 1.3rem;
+    color: ${colors.darkGray};
+    margin-bottom: 10px;
+  }
+
+  .status-detail {
+    font-size: 1rem;
+    color: ${colors.lightGray};
   }
 `;
 
 const PreviewTabs = styled.div`
   display: flex;
-  border-bottom: 2px solid ${colors.lightGray};
-  margin-bottom: 20px;
-  background: white;
+  gap: 5px;
+  margin-bottom: 0;
+  background: ${colors.lightGray}20;
   border-radius: 8px 8px 0 0;
-  overflow: hidden;
+  padding: 5px;
 `;
 
-const PreviewTab = styled.button`
-  flex: 1;
+const TabButton = styled.button`
   padding: 15px 20px;
+  background: ${props => props.active ? colors.primary : 'transparent'};
+  color: ${props => props.active ? 'white' : colors.darkGray};
   border: none;
-  background: ${props => props.active ? colors.primary : props.available ? 'white' : colors.lightGray + '50'};
-  color: ${props => props.active ? 'white' : props.available ? colors.darkGray : colors.lightGray};
-  font-weight: 600;
+  border-radius: 6px;
   cursor: ${props => props.available ? 'pointer' : 'not-allowed'};
   transition: all 0.3s ease;
   font-size: 0.9rem;
@@ -667,6 +566,121 @@ const PreviewContent = styled.div`
         border-top-color: ${colors.primary};
         animation: ${spin} 1s ease-in-out infinite;
       }
+    }
+  }
+`;
+
+const NoteEditSection = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  border: 1px solid ${colors.lightGray};
+`;
+
+const FormGroup = styled.div`
+  margin-bottom: 25px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: ${colors.darkGray};
+    font-size: 1rem;
+  }
+
+  input, textarea, select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid ${colors.lightGray};
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: white;
+
+    &:focus {
+      outline: none;
+      border-color: ${colors.primary};
+      box-shadow: 0 0 0 3px ${colors.primary}20;
+    }
+  }
+
+  textarea {
+    min-height: 120px;
+    resize: vertical;
+    font-family: inherit;
+  }
+`;
+
+const TagInput = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  border: 2px solid ${colors.lightGray};
+  border-radius: 8px;
+  min-height: 50px;
+  background: white;
+
+  &:focus-within {
+    border-color: ${colors.primary};
+    box-shadow: 0 0 0 3px ${colors.primary}20;
+  }
+
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 5px;
+    font-size: 1rem;
+    min-width: 120px;
+  }
+`;
+
+const Tag = styled.span`
+  background: ${colors.primary};
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  .remove {
+    cursor: pointer;
+    font-weight: bold;
+    
+    &:hover {
+      color: #ff4444;
+    }
+  }
+`;
+
+const AdvancedProgressBar = styled.div`
+  width: 100%;
+  height: 8px;
+  background: ${colors.lightGray};
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 15px 0;
+  position: relative;
+
+  .progress {
+    height: 100%;
+    background: linear-gradient(90deg, ${colors.primary}, ${colors.primaryDark});
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    position: relative;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: ${float} 2s ease-in-out infinite;
     }
   }
 `;
@@ -784,30 +798,8 @@ const VoiceUpload = () => {
     }
   }, [transcriptionJob, activeStep]);
 
-  // 변환 완료 시 선택된 옵션들 자동 처리
-  useEffect(() => {
-    if (transcriptionResults && activeStep === 3) {
-      console.log('🎯 옵션 처리 시작!');
-
-      if (processingOptions.summary) {
-        console.log('📊 요약 분석 시작');
-        dispatch(analyzeTranscription({ transcriptionId: transcriptionJob.id }));
-      }
-
-      if (processingOptions.translation) {
-        console.log('🌍 번역 시작 - 타겟 언어:', processingOptions.targetLanguage);
-        dispatch(translateTranscription({
-          transcriptionId: transcriptionJob.id,
-          targetLanguage: processingOptions.targetLanguage
-        }));
-      }
-
-      if (!processingOptions.summary && !processingOptions.translation) {
-        console.log('옵션 없음 - 바로 4단계로 이동');
-        setTimeout(() => setActiveStep(4), 1000);
-      }
-    }
-  }, [transcriptionResults, activeStep, processingOptions, dispatch, transcriptionJob]);
+  // 🔥 제거된 부분: 변환 완료 시 선택된 옵션들 자동 처리
+  // 이 useEffect를 제거하여 사용자가 수동으로 "다음" 버튼을 눌러야만 AI 처리가 시작되도록 함
 
   // 🔥 수정된 부분 3: 분석 및 번역 완료 확인
   useEffect(() => {
@@ -938,10 +930,8 @@ useEffect(() => {
       const url = URL.createObjectURL(recordedBlob);
       setAudioUrl(url);
       setSelectedFile(new File([recordedBlob], `recording-${Date.now()}.wav`, { type: 'audio/wav' }));
-
-      return () => {
-        URL.revokeObjectURL(url);
-      };
+      
+      return () => URL.revokeObjectURL(url);
     }
   }, [recordedBlob]);
 
@@ -1093,6 +1083,45 @@ useEffect(() => {
     }
   };
 
+  // 🔥 새로 추가된 이전/다음 단계 핸들러
+  const handlePreviousStep = () => {
+    if (activeStep > 1) {
+      setActiveStep(activeStep - 1);
+    }
+  };
+
+  const handleNextStep = () => {
+    if (activeStep === 2) {
+      // Step 2에서 Step 3으로 넘어갈 때 AI 처리 시작
+      setActiveStep(3);
+      
+      // 선택된 옵션에 따라 AI 처리 시작
+      if (transcriptionResults) {
+        console.log('🎯 옵션 처리 시작!');
+
+        if (processingOptions.summary) {
+          console.log('📊 요약 분석 시작');
+          dispatch(analyzeTranscription({ transcriptionId: transcriptionJob.id }));
+        }
+
+        if (processingOptions.translation) {
+          console.log('🌍 번역 시작 - 타겟 언어:', processingOptions.targetLanguage);
+          dispatch(translateTranscription({
+            transcriptionId: transcriptionJob.id,
+            targetLanguage: processingOptions.targetLanguage
+          }));
+        }
+
+        if (!processingOptions.summary && !processingOptions.translation) {
+          console.log('옵션 없음 - 바로 4단계로 이동');
+          setTimeout(() => setActiveStep(4), 1000);
+        }
+      }
+    } else if (activeStep < 4) {
+      setActiveStep(activeStep + 1);
+    }
+  };
+
   // 옵션 토글
   const handleOptionToggle = (option) => {
     setProcessingOptions(prev => ({
@@ -1182,139 +1211,84 @@ useEffect(() => {
             </div>
           );
         }
-
+        
       case 'summary':
-        if (noteData.summary) {
-          return (
-            <div>
-              <h3>📊 요약</h3>
-              {noteData.summary}
-            </div>
-          );
-        } else {
-          return (
-            <div className={`empty-state ${processingOptions.summary ? 'loading' : ''}`}>
-              {processingOptions.summary 
-                ? 'AI가 요약을 생성 중입니다' 
-                : '요약 기능이 선택되지 않았습니다.'
-              }
-            </div>
-          );
-        }
-
+        return noteData.summary ? (
+          <div>
+            <h3>📊 요약</h3>
+            <div>{noteData.summary}</div>
+          </div>
+        ) : (
+          <div className="empty-state">
+            요약 기능을 선택하면 여기에 요약 결과가 표시됩니다.
+          </div>
+        );
+        
       case 'keywords':
-        if (noteData.keywords) {
-          const keywordList = noteData.keywords.split(',').map(k => k.trim());
-          return (
-            <div>
-              <h3>🔍 핵심 키워드</h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '10px' }}>
-                {keywordList.map((keyword, index) => (
-                  <span 
-                    key={index}
-                    style={{
-                      background: colors.primary + '20',
-                      color: colors.primary,
-                      padding: '6px 12px',
-                      borderRadius: '20px',
-                      fontSize: '0.85rem',
-                      fontWeight: '500'
-                    }}
-                  >
-                    {keyword}
-                  </span>
-                ))}
-              </div>
-            </div>
-          );
-        } else {
-          return (
-            <div className={`empty-state ${processingOptions.summary ? 'loading' : ''}`}>
-              {processingOptions.summary 
-                ? 'AI가 키워드를 추출 중입니다' 
-                : '요약 기능이 선택되지 않았습니다.'
-              }
-            </div>
-          );
-        }
-
+        return noteData.keywords ? (
+          <div>
+            <h3>🔍 핵심 키워드</h3>
+            <div>{noteData.keywords}</div>
+          </div>
+        ) : (
+          <div className="empty-state">
+            키워드 추출 결과가 여기에 표시됩니다.
+          </div>
+        );
+        
       case 'translation':
-        if (noteData.translation) {
-          const langNames = {
-            'ko': '한국어',
-            'en': '영어',
-            'ja': '일본어',
-            'zh': '중국어',
-            'es': '스페인어',
-            'fr': '프랑스어'
-          };
-          const targetLangName = langNames[processingOptions.targetLanguage] || processingOptions.targetLanguage;
-          return (
-            <div>
-              <h3>🌍 번역 결과 ({targetLangName})</h3>
-              {noteData.translation}
-            </div>
-          );
-        } else {
-          return (
-            <div className={`empty-state ${processingOptions.translation ? 'loading' : ''}`}>
-              {processingOptions.translation 
-                ? 'AI가 번역 중입니다' 
-                : '번역 기능이 선택되지 않았습니다.'
-              }
-            </div>
-          );
-        }
-
+        return noteData.translation ? (
+          <div>
+            <h3>🌍 번역 결과</h3>
+            <div>{noteData.translation}</div>
+          </div>
+        ) : (
+          <div className="empty-state">
+            번역 기능을 선택하면 여기에 번역 결과가 표시됩니다.
+          </div>
+        );
+        
       default:
-        return <div className="empty-state">콘텐츠를 선택해주세요.</div>;
+        return <div className="empty-state">내용을 선택해주세요.</div>;
     }
   };
 
-  // 활성화된 탭 관리
+  // 탭 정보 가져오기
   const getAvailableTabs = () => {
-    const tabs = [];
-
-    // 텍스트 변환 탭은 항상 표시
-    tabs.push({ 
-      id: 'transcribe', 
-      label: '📝 텍스트', 
-      available: !!(transcriptionResults?.text || noteData.content),
-      count: transcriptionResults?.speakers?.length || 0
-    });
-
-    // 요약 기능이 선택된 경우에만 표시
-    if (processingOptions.summary) {
-      tabs.push({ 
-        id: 'summary', 
-        label: '📊 요약', 
+    return [
+      {
+        id: 'transcribe',
+        label: '텍스트 변환',
+        icon: <FaFileAlt />,
+        available: !!noteData.content,
+        badge: noteData.content ? 'Ready' : null
+      },
+      {
+        id: 'summary',
+        label: '요약',
+        icon: <FaFileAlt />,
         available: !!noteData.summary,
-        count: 0
-      });
-
-      tabs.push({ 
-        id: 'keywords', 
-        label: '🔍 키워드', 
+        badge: noteData.summary ? 'Ready' : null
+      },
+      {
+        id: 'keywords',
+        label: '키워드',
+        icon: <FaTag />,
         available: !!noteData.keywords,
-        count: noteData.keywords ? noteData.keywords.split(',').length : 0
-      });
-    }
-
-    // 번역 기능이 선택된 경우에만 표시
-    if (processingOptions.translation) {
-      tabs.push({ 
-        id: 'translation', 
-        label: '🌍 번역', 
+        badge: noteData.keywords ? 'Ready' : null
+      },
+      {
+        id: 'translation',
+        label: '번역',
+        icon: <FaLanguage />,
         available: !!noteData.translation,
-        count: 0
-      });
-    }
-
-    return tabs;
+        badge: noteData.translation ? 'Ready' : null
+      }
+    ];
   };
 
   // 태그 추가
-  const handleAddTag = () => {
+  const addTag = () => {
     if (tagInput.trim() && !noteData.tags.includes(tagInput.trim())) {
       setNoteData(prev => ({
         ...prev,
@@ -1325,65 +1299,57 @@ useEffect(() => {
   };
 
   // 태그 제거
-  const handleRemoveTag = (tagToRemove) => {
+  const removeTag = (tagToRemove) => {
     setNoteData(prev => ({
       ...prev,
       tags: prev.tags.filter(tag => tag !== tagToRemove)
     }));
   };
 
-// 노트 저장
-const handleSaveNote = async () => {
-  if (!noteData.title.trim()) {
-    dispatch(showNotification({
-      message: '노트 제목을 입력해주세요.',
-      type: 'error'
-    }));
-    return;
-  }
+  // 키 입력 핸들러
+  const handleTagKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addTag();
+    }
+  };
 
-  try {
-    // ✅ Redux store에서 직접 번역 결과 가져오기
-    const finalTranslation = translationResults?.[processingOptions.targetLanguage] || '';
-    
-    console.log('🌍 번역 저장 확인:', {
-      translationResults,
-      targetLanguage: processingOptions.targetLanguage,
-      finalTranslation: finalTranslation
-    });
+  // 노트 저장 (createNoteFromTranscription 사용)
+  const handleSaveNote = async () => {
+    try {
+      const finalTranslation = translationResults?.[processingOptions.targetLanguage] || '';
+      const finalContent = buildFinalContent();
 
-    await dispatch(createNoteFromTranscription({
-      transcriptionId: transcriptionJob.id,
-      title: noteData.title,
-      content: noteData.content || '',
-      summary: analysisResults?.summary || '',
-      keywords: analysisResults?.keyPhrases 
-        ? (Array.isArray(analysisResults.keyPhrases) 
-            ? analysisResults.keyPhrases.join(', ') 
-            : String(analysisResults.keyPhrases))
-        : '',
-      translation: finalTranslation, // ✅ Redux에서 직접 가져온 번역
-      targetLanguage: processingOptions.targetLanguage, // ✅ 타겟 언어도 전달
-      category: noteData.category,
-      tags: noteData.tags
-    })).unwrap();
+      await dispatch(createNoteFromTranscription({
+        title: noteData.title,
+        content: finalContent,
+        summary: noteData.summary,
+        keywords: Array.isArray(analysisResults?.keyPhrases) 
+          ? analysisResults.keyPhrases.join(', ') 
+          : (noteData.keywords || ''),
+        translation: finalTranslation,
+        targetLanguage: processingOptions.targetLanguage,
+        category: noteData.category,
+        tags: noteData.tags,
+        transcriptionId: transcriptionJob?.id
+      })).unwrap();
 
-    dispatch(showNotification({
-      message: '노트가 성공적으로 저장되었습니다.',
-      type: 'success'
-    }));
+      dispatch(showNotification({
+        message: '노트가 성공적으로 저장되었습니다.',
+        type: 'success'
+      }));
 
-    setTimeout(() => {
-      navigate('/notes');
-    }, 1500);
-  } catch (error) {
-    console.error('노트 저장 오류:', error);
-    dispatch(showNotification({
-      message: '노트 저장 중 오류가 발생했습니다.',
-      type: 'error'
-    }));
-  }
-};
+      setTimeout(() => {
+        navigate('/notes');
+      }, 1500);
+    } catch (error) {
+      console.error('노트 저장 오류:', error);
+      dispatch(showNotification({
+        message: '노트 저장 중 오류가 발생했습니다.',
+        type: 'error'
+      }));
+    }
+  };
 
   return (
     <Container>
@@ -1530,7 +1496,7 @@ const handleSaveNote = async () => {
               <ButtonGroup>
                 <ActionButton onClick={handleFileUpload} disabled={loading}>
                   <FaUpload />
-                  {loading ? '업로드 중...' : '업로드 시작'}
+                  {loading ? '업로드 중...' : '파일 업로드'}
                 </ActionButton>
               </ButtonGroup>
             </SelectedFileInfo>
@@ -1541,260 +1507,168 @@ const handleSaveNote = async () => {
       {/* Step 2: 옵션 선택 */}
       {activeStep === 2 && (
         <StepContent>
-          <StepTitle>추가 처리 옵션 선택</StepTitle>
-          <div style={{ textAlign: 'center', marginBottom: '40px', color: colors.darkGray }}>
-            필요한 기능을 선택하세요 (텍스트 변환은 기본으로 실행됩니다)
-          </div>
-
-          <OptionCard 
-            selected={processingOptions.summary}
-            onClick={() => handleOptionToggle('summary')}
-          >
-            <CheckboxWrapper>
-              <input 
-                type="checkbox" 
-                checked={processingOptions.summary}
-                onChange={() => handleOptionToggle('summary')}
-              />
-              <div>
-                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '5px' }}>
-                  요약 생성
+          <StepTitle>AI 처리 옵션 선택</StepTitle>
+          
+          <OptionSection>
+            <OptionTitle>
+              <FaEdit />
+              처리 옵션
+            </OptionTitle>
+            
+            <OptionGroup>
+              <CheckboxOption>
+                <input
+                  type="checkbox"
+                  checked={processingOptions.summary}
+                  onChange={(e) => setProcessingOptions(prev => ({ ...prev, summary: e.target.checked }))}
+                />
+                <div className="option-info">
+                  <div className="title">텍스트 요약</div>
+                  <div className="description">AI가 음성 내용을 자동으로 요약해드립니다</div>
                 </div>
-                <p style={{ margin: '5px 0 10px 0', fontSize: '0.9rem', color: colors.darkGray }}>
-                  음성 내용을 요약하고 핵심 키워드를 추출합니다
-                </p>
-              </div>
-            </CheckboxWrapper>
-          </OptionCard>
+              </CheckboxOption>
 
-          <OptionCard 
-            selected={processingOptions.translation}
-            onClick={() => handleOptionToggle('translation')}
-          >
-            <CheckboxWrapper>
-              <input 
-                type="checkbox" 
-                checked={processingOptions.translation}
-                onChange={() => handleOptionToggle('translation')}
-              />
-              <div style={{ width: '100%' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '5px' }}>
-                  다른 언어로 번역
+              <CheckboxOption>
+                <input
+                  type="checkbox"
+                  checked={processingOptions.translation}
+                  onChange={(e) => setProcessingOptions(prev => ({ ...prev, translation: e.target.checked }))}
+                />
+                <div className="option-info">
+                  <div className="title">언어 번역</div>
+                  <div className="description">음성 내용을 다른 언어로 번역합니다</div>
                 </div>
-                <p style={{ margin: '5px 0 10px 0', fontSize: '0.9rem', color: colors.darkGray }}>
-                  텍스트를 선택한 언어로 번역합니다
-                </p>
-
                 {processingOptions.translation && (
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    {[
-                      { code: 'en', name: '영어' },
-                      { code: 'ko', name: '한국어' },
-                      { code: 'ja', name: '일본어' },
-                      { code: 'zh', name: '중국어' },
-                      { code: 'es', name: '스페인어' },
-                      { code: 'fr', name: '프랑스어' }
-                    ].map(lang => (
-                      <button
-                        key={lang.code}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLanguageChange(lang.code);
-                        }}
-                        style={{
-                          padding: '5px 12px',
-                          border: `2px solid ${processingOptions.targetLanguage === lang.code ? colors.primary : colors.lightGray}`,
-                          borderRadius: '20px',
-                          background: processingOptions.targetLanguage === lang.code ? colors.primary : 'white',
-                          color: processingOptions.targetLanguage === lang.code ? 'white' : colors.darkGray,
-                          cursor: 'pointer',
-                          fontSize: '0.8rem'
-                        }}
-                      >
-                        {lang.name}
-                      </button>
-                    ))}
-                  </div>
+                  <LanguageSelector
+                    value={processingOptions.targetLanguage}
+                    onChange={(e) => setProcessingOptions(prev => ({ ...prev, targetLanguage: e.target.value }))}
+                  >
+                    <option value="en">영어</option>
+                    <option value="ja">일본어</option>
+                    <option value="zh">중국어</option>
+                    <option value="es">스페인어</option>
+                    <option value="fr">프랑스어</option>
+                  </LanguageSelector>
                 )}
-              </div>
-            </CheckboxWrapper>
-          </OptionCard>
+              </CheckboxOption>
+            </OptionGroup>
+          </OptionSection>
 
           <ButtonGroup>
-            <ActionButton onClick={() => setActiveStep(1)}>
+            <ActionButton onClick={handlePreviousStep} style={{ background: 'transparent', color: colors.primary, border: `2px solid ${colors.primary}` }}>
               <FaArrowLeft />
               이전
             </ActionButton>
-            <ActionButton onClick={handleStartProcessing}>
+            <ActionButton 
+              onClick={handleNextStep}
+              disabled={!transcriptionResults}
+            >
               <FaArrowRight />
-              처리 시작
+              다음
             </ActionButton>
           </ButtonGroup>
         </StepContent>
       )}
 
-      {/* Step 3: 처리 중 */}
+      {/* Step 3: AI 처리 중 */}
       {activeStep === 3 && (
         <StepContent>
           <StepTitle>AI 처리 중</StepTitle>
           
-          <ProcessingContainer>
-            {/* 텍스트 변환 단계 */}
-            <ProcessingStep
-              completed={transcriptionResults?.text}
-              active={!transcriptionResults?.text}
-              index={0}
-            >
-              <div className="icon">
-                {transcriptionResults?.text ? <FaCheck /> : <FaFileAlt />}
-              </div>
-              <div className="content">
-                <div className="title">📝 텍스트 변환</div>
-                <div className="description">
-                  {transcriptionResults?.text
-                    ? '✅ 완료'
-                    : '⏳ 진행중...'
-                  }
-                </div>
-                <div className="progress-text">
-                  {!transcriptionResults?.text && '음성을 분석하고 있습니다...'}
-                </div>
-              </div>
-            </ProcessingStep>
+          <ProcessingStatus>
+            <div className="status-icon loading">
+              <FaEdit />
+            </div>
+            <div className="status-text">음성을 분석하고 있습니다</div>
+            <div className="status-detail">
+              {processingOptions.summary && '텍스트 요약 '}
+              {processingOptions.translation && '언어 번역 '}
+              처리 중...
+            </div>
+          </ProcessingStatus>
 
-            {/* 요약 단계 */}
-            {processingOptions.summary && (
-              <ProcessingStep
-                completed={analysisResults?.summary}
-                active={transcriptionResults?.text && !analysisResults?.summary}
-                index={1}
-              >
-                <div className="icon">
-                  {analysisResults?.summary ? <FaCheck /> : <FaFileAlt />}
-                </div>
-                <div className="content">
-                  <div className="title">📊 요약 생성</div>
-                  <div className="description">
-                    {analysisResults?.summary
-                      ? '✅ 완료'
-                      : '⏳ 진행중...'
-                    }
-                  </div>
-                  <div className="progress-text">
-                    {transcriptionResults?.text && !analysisResults?.summary && 'AI가 내용을 분석중입니다...'}
-                  </div>
-                </div>
-              </ProcessingStep>
-            )}
-
-            {/* 🔥 수정된 부분 4: 번역 단계 */}
-            {processingOptions.translation && (
-              <ProcessingStep
-                completed={translationResults && translationResults[processingOptions.targetLanguage]}
-                active={transcriptionResults?.text && !(translationResults && translationResults[processingOptions.targetLanguage])}
-                index={2}
-              >
-                <div className="icon">
-                  {(translationResults && translationResults[processingOptions.targetLanguage]) ? <FaCheck /> : <FaLanguage />}
-                </div>
-                <div className="content">
-                  <div className="title">🌐 번역</div>
-                  <div className="description">
-                    {(translationResults && translationResults[processingOptions.targetLanguage])
-                      ? '✅ 완료'
-                      : '⏳ 진행중...'
-                    }
-                  </div>
-                  <div className="progress-text">
-                    {transcriptionResults?.text && !(translationResults && translationResults[processingOptions.targetLanguage]) && 'AI가 번역 중입니다...'}
-                  </div>
-                </div>
-              </ProcessingStep>
-            )}
-          </ProcessingContainer>
+          <ButtonGroup>
+            <ActionButton onClick={handlePreviousStep} style={{ background: 'transparent', color: colors.primary, border: `2px solid ${colors.primary}` }}>
+              <FaArrowLeft />
+              이전
+            </ActionButton>
+          </ButtonGroup>
         </StepContent>
       )}
 
       {/* Step 4: 노트 저장 */}
       {activeStep === 4 && (
         <StepContent>
-          <StepTitle>노트 저장</StepTitle>
+          <StepTitle>노트 확인 및 저장</StepTitle>
           
+          {/* 미리보기 탭 */}
+          <PreviewTabs>
+            {getAvailableTabs().map(tab => (
+              <TabButton
+                key={tab.id}
+                active={activePreviewTab === tab.id}
+                available={tab.available}
+                onClick={() => tab.available && setActivePreviewTab(tab.id)}
+              >
+                {tab.icon}
+                {tab.label}
+                {tab.badge && <span className="badge">{tab.badge}</span>}
+              </TabButton>
+            ))}
+          </PreviewTabs>
+
+          {/* 미리보기 내용 */}
+          <PreviewContent>
+            {renderPreviewContent()}
+          </PreviewContent>
+
+          {/* 노트 편집 섹션 */}
           <NoteEditSection>
-            <InputGroup>
-              <label>제목</label>
+            <FormGroup>
+              <label>노트 제목</label>
               <input
                 type="text"
                 value={noteData.title}
                 onChange={(e) => setNoteData(prev => ({ ...prev, title: e.target.value }))}
                 placeholder="노트 제목을 입력하세요"
               />
-            </InputGroup>
+            </FormGroup>
 
-            <InputGroup>
+            <FormGroup>
               <label>카테고리</label>
               <select
                 value={noteData.category}
                 onChange={(e) => setNoteData(prev => ({ ...prev, category: e.target.value }))}
               >
-                <option value="basic">강의(학습)</option>
-                <option value="study">아이디어</option>
-                <option value="meeting">일정</option>
-                <option value="personal">메모</option>
+                <option value="basic">기본</option>
+                <option value="work">업무</option>
+                <option value="study">학습</option>
+                <option value="personal">개인</option>
+                <option value="meeting">회의</option>
               </select>
-            </InputGroup>
+            </FormGroup>
 
-            <InputGroup>
+            <FormGroup>
               <label>태그</label>
               <TagInput>
+                {noteData.tags.map(tag => (
+                  <Tag key={tag}>
+                    {tag}
+                    <span className="remove" onClick={() => removeTag(tag)}>×</span>
+                  </Tag>
+                ))}
                 <input
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
-                  placeholder="태그를 입력하세요"
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                  onKeyPress={handleTagKeyPress}
+                  placeholder="태그를 입력하고 Enter를 누르세요"
                 />
-                <button onClick={handleAddTag}>
-                  <FaPlus />
-                </button>
               </TagInput>
-              <TagContainer>
-                {noteData.tags.map((tag, index) => (
-                  <Tag key={index}>
-                    <FaTag />
-                    {tag}
-                    <span className="remove" onClick={() => handleRemoveTag(tag)}>×</span>
-                  </Tag>
-                ))}
-              </TagContainer>
-            </InputGroup>
-
-            <div style={{ marginBottom: '20px' }}>
-              <h4 style={{ marginBottom: '15px', color: colors.darkGray }}>미리보기</h4>
-              
-              <PreviewTabs>
-                {getAvailableTabs().map(tab => (
-                  <PreviewTab
-                    key={tab.id}
-                    active={activePreviewTab === tab.id}
-                    available={tab.available}
-                    onClick={() => tab.available && setActivePreviewTab(tab.id)}
-                  >
-                    <span>{tab.label}</span>
-                    {tab.count > 0 && (
-                      <span className="badge">{tab.count}</span>
-                    )}
-                  </PreviewTab>
-                ))}
-              </PreviewTabs>
-
-              <PreviewContent>
-                {renderPreviewContent()}
-              </PreviewContent>
-            </div>
+            </FormGroup>
 
             <ButtonGroup>
-              <ActionButton onClick={() => setActiveStep(3)}>
+              <ActionButton onClick={handlePreviousStep} style={{ background: 'transparent', color: colors.primary, border: `2px solid ${colors.primary}` }}>
                 <FaArrowLeft />
                 이전
               </ActionButton>
