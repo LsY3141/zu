@@ -340,7 +340,7 @@ const getSharedNotes = async (userId) => {
     FROM notes n
     JOIN shared_notes s ON n.id = s.note_id
     JOIN users u ON n.user_id = u.id
-    WHERE s.shared_with = ? OR s.shared_by = ?
+    WHERE (s.shared_with = ? OR s.shared_by = ?) AND n.is_deleted = 0
   `;
   
   try {
