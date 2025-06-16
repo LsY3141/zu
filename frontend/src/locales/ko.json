@@ -61,7 +61,7 @@
       "loadingError": "노트를 불러오는 중 오류가 발생했습니다",
       "notFound": "노트를 찾을 수 없습니다"
     },
-    "types": {
+    "type": {
       "voice": "음성 노트",
       "text": "텍스트 노트"
     }
@@ -250,7 +250,9 @@
     "empty": {
       "title": "아직 작성된 노트가 없습니다.",
       "description": "첫 번째 노트를 만들어보세요!",
-      "createNote": "노트 작성하기"
+      "createNote": "노트 작성하기",
+      "createButton": "노트 만들기"
+
     },
     "tips": {
       "ai": {

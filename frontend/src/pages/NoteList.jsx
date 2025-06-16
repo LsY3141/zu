@@ -648,12 +648,19 @@ const NoteListComponent = () => {
   // 카테고리 옵션 번역
   const CATEGORIES = [
   { value: '전체', label: 'All' },
-  { value: 'basic', label: 'Lecture (Study)' },
-  { value: 'meeting', label: 'Ideas' },
-  { value: 'study', label: 'Schedule' },
-  { value: 'personal', label: 'Memo' }
+  { value: 'basic', label: '강의 (학습)' },
+  { value: 'meeting', label: '아이디어' },
+  { value: 'study', label: '일정' },
+  { value: 'personal', label: '메모' }
 ];
 
+// 카테고리 옵션 번역
+  const categories = [
+  { value: 'basic', label: '강의 (학습)' },
+  { value: 'meeting', label: '아이디어' },
+  { value: 'study', label: '일정' },
+  { value: 'personal', label: '메모' }
+];
 
 
   // 정렬 옵션 번역

@@ -61,7 +61,7 @@
       "loadingError": "An error occurred while loading the note",
       "notFound": "Note not found"
     },
-    "types": {
+    "type": {
       "voice": "Voice Note",
       "text": "Text Note"
     }
@@ -250,7 +250,8 @@
     "empty": {
       "title": "No notes created yet.",
       "description": "Create your first note!",
-      "createNote": "Create Note"
+      "createNote": "Create Note",
+      "createButton": "Create Note"
     },
     "tips": {
       "ai": {
